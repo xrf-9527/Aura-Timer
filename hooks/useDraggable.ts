@@ -1,10 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Position } from '../types';
 
-export const useDraggable = (initialPosition: Position) => {
+interface WidgetSize {
+  width: number;
+  height: number;
+}
+
+export const useDraggable = (
+  initialPosition: Position,
+  widgetSize: WidgetSize = { width: 340, height: 200 }
+) => {
   const [position, setPosition] = useState<Position>(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
+  const prevAspectRatio = useRef(window.innerWidth / window.innerHeight);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Prevent dragging if interacting with inputs or buttons
@@ -79,6 +88,37 @@ export const useDraggable = (initialPosition: Position) => {
       window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
+  // Auto-center on screen rotation (detect aspect ratio change)
+  useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout>;
+
+    const handleResize = () => {
+      const currentAspectRatio = window.innerWidth / window.innerHeight;
+      const aspectRatioChanged = Math.abs(currentAspectRatio - prevAspectRatio.current) > 0.1;
+
+      // If aspect ratio significantly changed (usually screen rotation), recenter widget
+      if (aspectRatioChanged) {
+        const centerX = (window.innerWidth - widgetSize.width) / 2;
+        const centerY = (window.innerHeight - widgetSize.height) / 2;
+
+        setPosition({ x: centerX, y: centerY });
+        prevAspectRatio.current = currentAspectRatio;
+      }
+    };
+
+    // Debounce to avoid frequent calculations
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleResize, 150);
+    };
+
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      clearTimeout(resizeTimer);
+    };
+  }, [widgetSize.width, widgetSize.height]);
 
   return { position, handleMouseDown, handleTouchStart, isDragging };
 };
