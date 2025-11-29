@@ -258,14 +258,22 @@ export const TimerWidget: React.FC = () => {
         isDragging ? 'cursor-grabbing' : 'cursor-default'
       }`}
       style={{
-        left: position.x,
-        top: position.y,
+        left: 0,
+        top: 0,
+        // GPU-accelerated positioning via transform (better performance than left/top)
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        // Smooth transition on auto-recenter, disabled while dragging for instant feedback
+        transition: isDragging
+          ? 'box-shadow 0.3s ease-in-out'
+          : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease-in-out',
+        // Hint browser to optimize transform animations
+        willChange: isDragging ? 'transform' : 'auto',
         width: '340px',
         // Glassmorphism Styles
         backdropFilter: 'blur(30px)',
         WebkitBackdropFilter: 'blur(30px)',
         // Softer dark background for better eye protection (less contrast strain)
-        backgroundColor: 'rgba(30, 30, 35, 0.60)', 
+        backgroundColor: 'rgba(30, 30, 35, 0.60)',
         boxShadow: boxGlowStyle,
         borderRadius: '24px',
         zIndex: 9999,
