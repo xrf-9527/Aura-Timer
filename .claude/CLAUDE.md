@@ -57,6 +57,56 @@ npm run deploy          # Deploy to Cloudflare Workers
 
 **IMPORTANT**: Always verify against official documentation using the `claude-code-guide` agent when uncertain about React, Claude Code, or TypeScript best practices. Don't rely on assumptions—official docs change frequently (especially React 19.2 patterns).
 
+## Custom Slash Commands
+
+This project includes custom slash commands for common workflows. All commands are in `.claude/commands/`.
+
+### Available Commands
+
+| Command | Purpose | Usage |
+|---------|---------|-------|
+| `/tighten-docs` | Optimize CLAUDE.md to reduce token usage while preserving essential information | `/tighten-docs` |
+| `/review-best-practices` | Review code against project best practices defined in CLAUDE.md | `/review-best-practices [file-path]` |
+| `/check-build` | Run TypeScript and Vite build checks, analyze and fix any errors | `/check-build` |
+| `/update-memory` | Update CLAUDE.md with new lessons learned or guidelines | `/update-memory <section> <guideline>` |
+
+### Workflow Pattern
+
+**Best practice workflow** (inspired by high-performing teams):
+
+1. **Spot an issue**: Find code that could be better or a repeated mistake
+2. **Update memory**: Use `/update-memory` to add guideline to CLAUDE.md
+3. **Tighten rules**: Run `/tighten-docs` to ensure documentation stays concise
+4. **Review code**: Use `/review-best-practices` to check compliance
+
+This creates **clear guardrails** for future development and prevents repeating the same issues.
+
+### Command Details
+
+**`/tighten-docs`** - Token Optimizer
+- Analyzes CLAUDE.md for redundancy and verbosity
+- Follows official "navigation hub" philosophy
+- Proposes optimizations with before/after examples
+- Asks for approval before making changes
+
+**`/review-best-practices [file-path]`** - Code Quality Checker
+- Reviews code against React 19.2 best practices
+- Flags `useCallback` misuse, accessibility issues, type errors
+- Provides compliance score and actionable fixes
+- Can review specific file or recent git changes
+
+**`/check-build`** - Build Validator
+- Runs TypeScript type check and Vite build
+- Analyzes errors with context-specific explanations
+- Proposes fixes for common Aura Timer build issues
+- Verifies bundle size and build output
+
+**`/update-memory <section> <guideline>`** - Knowledge Capture
+- Adds new guidelines to CLAUDE.md based on discoveries
+- Validates for specificity, conciseness, and uniqueness
+- Formats according to section standards
+- Prevents duplicate or outdated information
+
 ## Build & Test Procedures
 
 ### Before Committing Code
