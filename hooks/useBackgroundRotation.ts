@@ -52,8 +52,24 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
     transitionDuration = 2000, // 默认 2 秒过渡
   } = options;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // 随机选择初始背景图片索引，每次刷新页面都显示不同的图片
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    Math.floor(Math.random() * BACKGROUND_IMAGES.length)
+  );
   const [opacity, setOpacity] = useState(1);
+
+  // 预加载初始图片（仅在组件挂载时执行一次）
+  useEffect(() => {
+    const preloadImage = (index: number) => {
+      const img = new Image();
+      img.src = BACKGROUND_IMAGES[index];
+    };
+
+    // 预加载当前随机选择的图片和下一张图片
+    preloadImage(currentIndex);
+    preloadImage((currentIndex + 1) % BACKGROUND_IMAGES.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 仅在挂载时执行，currentIndex 在初始化时已确定
 
   // React 19.2 最佳实践: 按照官方文档建议，将函数移到 Effect 内部
   // 参考: https://react.dev/reference/react/useCallback
@@ -66,10 +82,6 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
       const img = new Image();
       img.src = BACKGROUND_IMAGES[index];
     };
-
-    // 预加载初始图片
-    preloadImage(0);
-    preloadImage(1);
 
     // 切换到下一张背景图片
     const switchToNext = () => {
