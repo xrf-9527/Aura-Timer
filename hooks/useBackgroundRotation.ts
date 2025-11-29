@@ -54,7 +54,6 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [opacity, setOpacity] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // 预加载下一张图片
   const preloadImage = useCallback((index: number) => {
@@ -63,11 +62,8 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
   }, []);
 
   // 切换到下一张背景图片
+  // 使用 useCallback 确保函数引用稳定，避免不必要的重新渲染
   const switchToNext = useCallback(() => {
-    if (isTransitioning) return;
-
-    setIsTransitioning(true);
-
     // 淡出当前图片
     setOpacity(0);
 
@@ -83,12 +79,12 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
       // 淡入新图片
       setTimeout(() => {
         setOpacity(1);
-        setIsTransitioning(false);
       }, 50);
     }, transitionDuration);
-  }, [isTransitioning, preloadImage, transitionDuration]);
+  }, [preloadImage, transitionDuration]);
 
   // 设置定时轮换
+  // React 19.2: 依赖数组优化，确保正确的依赖关系
   useEffect(() => {
     if (!enabled) return;
 

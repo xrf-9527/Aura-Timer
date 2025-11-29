@@ -15,6 +15,11 @@ export interface BackgroundLayerProps {
  * - 平滑的淡入淡出过渡效果
  * - 固定定位，覆盖整个视口
  * - 使用自然风景图片（绿色、蓝色主题）
+ *
+ * @example
+ * ```tsx
+ * <BackgroundLayer interval={5 * 60 * 1000} enabled={true} />
+ * ```
  */
 export function BackgroundLayer({ interval, enabled = true }: BackgroundLayerProps) {
   const { backgroundUrl, opacity, transitionDuration } = useBackgroundRotation({
@@ -25,6 +30,8 @@ export function BackgroundLayer({ interval, enabled = true }: BackgroundLayerPro
   return (
     <div
       className="fixed inset-0 z-0 pointer-events-none"
+      role="presentation"
+      aria-hidden="true"
       style={{
         backgroundImage: `url('${backgroundUrl}')`,
         backgroundSize: 'cover',
