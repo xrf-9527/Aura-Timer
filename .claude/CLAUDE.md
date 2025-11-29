@@ -33,6 +33,54 @@ npm run deploy          # Deploy to Cloudflare Workers
 2. Run `npm install` to install all dependencies
 3. The project uses ESM import maps for browser module loading
 
+## Working with Claude Code Agent
+
+### Querying Official Documentation (IMPORTANT)
+
+**When you need to check React, Claude Code, or other official documentation:**
+
+❌ **DO NOT** rely on memory or assumptions
+✅ **DO** use the Task tool with `claude-code-guide` agent to query official docs
+
+**Example - Checking React Best Practices:**
+```typescript
+// Use this pattern when uncertain about React conventions
+Task({
+  subagent_type: "claude-code-guide",
+  prompt: "Look up the official React documentation about useCallback best practices.
+          I need to verify when it should and shouldn't be used."
+})
+```
+
+**Example - Claude Code Features:**
+```typescript
+// Query Claude Code capabilities
+Task({
+  subagent_type: "claude-code-guide",
+  prompt: "Check the official Claude Code documentation about CLAUDE.md files.
+          What should be included and what's the recommended structure?"
+})
+```
+
+**Why This Matters:**
+- Official documentation changes frequently (React 19.2 has new patterns)
+- Avoids implementing outdated or incorrect patterns
+- Ensures code follows current best practices
+- Prevents technical debt from wrong assumptions
+
+**Common Documentation to Verify:**
+- React hooks usage patterns → `claude-code-guide` agent
+- TypeScript configuration → `claude-code-guide` agent
+- Claude Code features (hooks, slash commands, MCP) → `claude-code-guide` agent
+- Vite configuration → Web search or official docs
+- Tailwind CSS classes → Web search
+
+**Documentation Sources Priority:**
+1. **Official React Docs**: https://react.dev (use claude-code-guide agent)
+2. **Claude Code Docs**: https://code.claude.com/docs (use claude-code-guide agent)
+3. **TypeScript Handbook**: https://www.typescriptlang.org/docs/
+4. **Vite Guide**: https://vitejs.dev/guide/
+
 ## Build & Test Procedures
 
 ### Before Committing Code
@@ -248,19 +296,29 @@ Before committing code, ensure:
 - [ ] Components have TypeScript interfaces for props
 - [ ] Accessibility attributes are present where needed
 - [ ] Code follows React 19.2 official guidelines
+- [ ] **When uncertain, used `claude-code-guide` agent to verify against official docs**
 
 ## Resources
 
+### Official Documentation (Query via claude-code-guide agent)
+- **Claude Code Documentation**: https://code.claude.com/docs
+- **Claude Code Memory Guide**: https://code.claude.com/docs/en/memory.md
 - **React 19 Documentation**: https://react.dev/blog/2024/04/25/react-19
 - **useCallback Best Practices**: https://react.dev/reference/react/useCallback
+- **React Hooks Reference**: https://react.dev/reference/react
+
+### Additional Resources
 - **TypeScript Handbook**: https://www.typescriptlang.org/docs/
 - **Vite Guide**: https://vitejs.dev/guide/
 - **Unsplash API**: https://unsplash.com/developers (for background images)
+- **Tailwind CSS**: https://tailwindcss.com/docs
 
 ## Team Notes
 
 - This project prioritizes **code simplicity over premature optimization**
-- Follow React official documentation for best practices, not blog posts
+- **ALWAYS verify against official documentation** using `claude-code-guide` agent - don't rely on assumptions
+- Follow React official documentation for best practices, not blog posts or outdated tutorials
+- When in doubt about a pattern or convention, query the official docs first
 - Avoid over-engineering; keep solutions focused and minimal
 - Review CLAUDE.md when starting new features to stay aligned
 
