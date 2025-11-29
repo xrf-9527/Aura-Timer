@@ -1,4 +1,3 @@
-import React from 'react';
 import { TimerWidget } from './components/TimerWidget';
 
 function App() {
