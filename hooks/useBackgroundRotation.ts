@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 // 精选护眼高清背景图片集合（使用 Unsplash 的自然风景主题）
 // 这些图片都是柔和的自然色调，对眼睛友好
@@ -55,52 +55,53 @@ export function useBackgroundRotation(options: BackgroundRotationOptions = {}) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [opacity, setOpacity] = useState(1);
 
-  // 预加载下一张图片
-  const preloadImage = useCallback((index: number) => {
-    const img = new Image();
-    img.src = BACKGROUND_IMAGES[index];
-  }, []);
-
-  // 切换到下一张背景图片
-  // 使用 useCallback 确保函数引用稳定，避免不必要的重新渲染
-  const switchToNext = useCallback(() => {
-    // 淡出当前图片
-    setOpacity(0);
-
-    setTimeout(() => {
-      // 切换到下一张
-      setCurrentIndex((prev) => {
-        const nextIndex = (prev + 1) % BACKGROUND_IMAGES.length;
-        // 预加载再下一张
-        preloadImage((nextIndex + 1) % BACKGROUND_IMAGES.length);
-        return nextIndex;
-      });
-
-      // 淡入新图片
-      setTimeout(() => {
-        setOpacity(1);
-      }, 50);
-    }, transitionDuration);
-  }, [preloadImage, transitionDuration]);
-
-  // 设置定时轮换
-  // React 19.2: 依赖数组优化，确保正确的依赖关系
+  // React 19.2 最佳实践: 按照官方文档建议，将函数移到 Effect 内部
+  // 参考: https://react.dev/reference/react/useCallback
+  // "Moving functions inside Effects when possible"
   useEffect(() => {
     if (!enabled) return;
 
-    // 预加载第一张和第二张图片
+    // 预加载图片的辅助函数
+    const preloadImage = (index: number) => {
+      const img = new Image();
+      img.src = BACKGROUND_IMAGES[index];
+    };
+
+    // 预加载初始图片
     preloadImage(0);
     preloadImage(1);
 
+    // 切换到下一张背景图片
+    const switchToNext = () => {
+      // 淡出当前图片
+      setOpacity(0);
+
+      setTimeout(() => {
+        // 切换到下一张
+        setCurrentIndex((prev) => {
+          const nextIndex = (prev + 1) % BACKGROUND_IMAGES.length;
+          // 预加载再下一张
+          preloadImage((nextIndex + 1) % BACKGROUND_IMAGES.length);
+          return nextIndex;
+        });
+
+        // 淡入新图片
+        setTimeout(() => {
+          setOpacity(1);
+        }, 50);
+      }, transitionDuration);
+    };
+
+    // 设置定时轮换
     const timer = setInterval(switchToNext, interval);
 
     return () => clearInterval(timer);
-  }, [enabled, interval, switchToNext, preloadImage]);
+    // 只依赖配置项，不依赖函数引用
+  }, [enabled, interval, transitionDuration]);
 
   return {
     backgroundUrl: BACKGROUND_IMAGES[currentIndex],
     opacity,
     transitionDuration: transitionDuration / 1000, // 转换为秒
-    switchToNext, // 暴露手动切换方法
   };
 }
