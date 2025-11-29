@@ -33,53 +33,79 @@ npm run deploy          # Deploy to Cloudflare Workers
 2. Run `npm install` to install all dependencies
 3. The project uses ESM import maps for browser module loading
 
+## SessionStart Hook (Auto-Initialization)
+
+**Purpose**: Automatically install npm dependencies in Claude Code web/remote sessions
+
+**Configuration**: `.claude/settings.json` → runs `scripts/install_deps.sh` on startup
+
+**How it works**:
+- Only runs in web/remote environments (`$CLAUDE_CODE_REMOTE == "true"`)
+- Skips if dependencies already exist (React, Vite, TypeScript)
+- Prefers `npm ci` (~30s) with fallback to `npm install` (~60s)
+- Local development is unaffected (hook skips automatically)
+
+**Key features**:
+- Uses `npm ci` to enforce exact versions from `package-lock.json`
+- Subsequent runs are fast (~1s detection skip)
+- Persists `NODE_ENV=development` to session
+
+**Troubleshooting**: See detailed comments in `scripts/install_deps.sh`
+**Disable**: Empty the `SessionStart` array in `.claude/settings.json`
+
 ## Working with Claude Code Agent
 
-### Querying Official Documentation (IMPORTANT)
+**IMPORTANT**: Always verify against official documentation using the `claude-code-guide` agent when uncertain about React, Claude Code, or TypeScript best practices. Don't rely on assumptions—official docs change frequently (especially React 19.2 patterns).
 
-**When you need to check React, Claude Code, or other official documentation:**
+## Custom Slash Commands
 
-❌ **DO NOT** rely on memory or assumptions
-✅ **DO** use the Task tool with `claude-code-guide` agent to query official docs
+This project includes custom slash commands for common workflows. All commands are in `.claude/commands/`.
 
-**Example - Checking React Best Practices:**
-```typescript
-// Use this pattern when uncertain about React conventions
-Task({
-  subagent_type: "claude-code-guide",
-  prompt: "Look up the official React documentation about useCallback best practices.
-          I need to verify when it should and shouldn't be used."
-})
-```
+### Available Commands
 
-**Example - Claude Code Features:**
-```typescript
-// Query Claude Code capabilities
-Task({
-  subagent_type: "claude-code-guide",
-  prompt: "Check the official Claude Code documentation about CLAUDE.md files.
-          What should be included and what's the recommended structure?"
-})
-```
+| Command | Purpose | Usage |
+|---------|---------|-------|
+| `/tighten-docs` | Optimize CLAUDE.md to reduce token usage while preserving essential information | `/tighten-docs` |
+| `/review-best-practices` | Review code against project best practices defined in CLAUDE.md | `/review-best-practices [file-path]` |
+| `/check-build` | Run TypeScript and Vite build checks, analyze and fix any errors | `/check-build` |
+| `/update-memory` | Update CLAUDE.md with new lessons learned or guidelines | `/update-memory <section> <guideline>` |
 
-**Why This Matters:**
-- Official documentation changes frequently (React 19.2 has new patterns)
-- Avoids implementing outdated or incorrect patterns
-- Ensures code follows current best practices
-- Prevents technical debt from wrong assumptions
+### Workflow Pattern
 
-**Common Documentation to Verify:**
-- React hooks usage patterns → `claude-code-guide` agent
-- TypeScript configuration → `claude-code-guide` agent
-- Claude Code features (hooks, slash commands, MCP) → `claude-code-guide` agent
-- Vite configuration → Web search or official docs
-- Tailwind CSS classes → Web search
+**Best practice workflow** (inspired by high-performing teams):
 
-**Documentation Sources Priority:**
-1. **Official React Docs**: https://react.dev (use claude-code-guide agent)
-2. **Claude Code Docs**: https://code.claude.com/docs (use claude-code-guide agent)
-3. **TypeScript Handbook**: https://www.typescriptlang.org/docs/
-4. **Vite Guide**: https://vitejs.dev/guide/
+1. **Spot an issue**: Find code that could be better or a repeated mistake
+2. **Update memory**: Use `/update-memory` to add guideline to CLAUDE.md
+3. **Tighten rules**: Run `/tighten-docs` to ensure documentation stays concise
+4. **Review code**: Use `/review-best-practices` to check compliance
+
+This creates **clear guardrails** for future development and prevents repeating the same issues.
+
+### Command Details
+
+**`/tighten-docs`** - Token Optimizer
+- Analyzes CLAUDE.md for redundancy and verbosity
+- Follows official "navigation hub" philosophy
+- Proposes optimizations with before/after examples
+- Asks for approval before making changes
+
+**`/review-best-practices [file-path]`** - Code Quality Checker
+- Reviews code against React 19.2 best practices
+- Flags `useCallback` misuse, accessibility issues, type errors
+- Provides compliance score and actionable fixes
+- Can review specific file or recent git changes
+
+**`/check-build`** - Build Validator
+- Runs TypeScript type check and Vite build
+- Analyzes errors with context-specific explanations
+- Proposes fixes for common Aura Timer build issues
+- Verifies bundle size and build output
+
+**`/update-memory <section> <guideline>`** - Knowledge Capture
+- Adds new guidelines to CLAUDE.md based on discoveries
+- Validates for specificity, conciseness, and uniqueness
+- Formats according to section standards
+- Prevents duplicate or outdated information
 
 ## Build & Test Procedures
 
@@ -99,29 +125,9 @@ Task({
 
 ### React 19.2 Best Practices (CRITICAL)
 
-**DO NOT use `useCallback` unless absolutely necessary**
-- ❌ **AVOID**: Wrapping functions in `useCallback` by default
-- ✅ **DO**: Move functions inside `useEffect` when they're only used there
-- **Reference**: https://react.dev/reference/react/useCallback
-- **Principle**: "Moving functions inside Effects when possible"
-
-Example (CORRECT):
-```typescript
-useEffect(() => {
-  const handleEvent = () => { /* logic */ };
-  const timer = setInterval(handleEvent, 1000);
-  return () => clearInterval(timer);
-}, [dependency1, dependency2]); // Only primitive dependencies
-```
-
-Example (INCORRECT - over-memoization):
-```typescript
-const handleEvent = useCallback(() => { /* logic */ }, [dep1, dep2]);
-useEffect(() => {
-  const timer = setInterval(handleEvent, 1000);
-  return () => clearInterval(timer);
-}, [handleEvent]); // Function dependency creates complexity
-```
+- **DO NOT use `useCallback` by default** - Move functions inside `useEffect` when only used there ([official guidance](https://react.dev/reference/react/useCallback))
+- **DO** use primitive dependencies in `useEffect` dependency arrays, not function references
+- **DO** use named exports for components, default export only for App.tsx
 
 ### TypeScript Configuration
 
@@ -134,16 +140,9 @@ useEffect(() => {
 
 ### Component Patterns
 
-**Function Components:**
-- Use named exports for components: `export function ComponentName() {}`
-- Use default export only for App.tsx
-- Add TypeScript interfaces for all props
-- Include JSDoc comments with examples for reusable components
-
-**Accessibility:**
-- Add `role="presentation"` for decorative elements
-- Use `aria-hidden="true"` for non-interactive backgrounds
-- Ensure keyboard navigation works (Space, R keys for timer)
+- TypeScript interfaces required for all props
+- JSDoc comments for reusable components
+- Accessibility: `role="presentation"` for decorative elements, keyboard navigation (Space: play/pause, R: reset)
 
 ### File Organization
 ```
@@ -166,36 +165,16 @@ useEffect(() => {
 
 ### Background Image Rotation System
 
-**Design Decision**: Use automatic background rotation with eye-friendly images
-- **12 curated images** from Unsplash (nature themes: forests, mountains, lakes)
-- **5-minute rotation interval** by default (configurable)
-- **2-second fade transition** for smooth visual experience
-- **Preloading strategy**: Preload next image to prevent loading flashes
-
-**Implementation** (`hooks/useBackgroundRotation.ts`):
-```typescript
-// Pattern: Functions inside useEffect (React 19.2 best practice)
-useEffect(() => {
-  const preloadImage = (index: number) => { /* ... */ };
-  const switchToNext = () => { /* ... */ };
-  const timer = setInterval(switchToNext, interval);
-  return () => clearInterval(timer);
-}, [enabled, interval, transitionDuration]); // Primitive dependencies only
-```
-
-**Color Psychology for Eye Health:**
-- Green tones (forests, fields) - optimal for reducing eye strain
-- Blue tones (sky, water) - calming and visually relaxing
-- Avoid high-contrast or overly bright images
-- All images are 1920px width, quality=80 for optimal loading
+**Architecture** (`hooks/useBackgroundRotation.ts`):
+- 12 curated eye-friendly nature images from Unsplash (1920px, q=80)
+- Random initial image on page load, then 5-min rotation with 2s fade transitions
+- Preloads next image to prevent loading flashes
+- **Pattern**: Functions inside `useEffect` (React 19.2 best practice) with primitive dependencies only
 
 ### Glassmorphism Design
 
-The timer widget uses macOS-style glassmorphism:
-- Backdrop blur with semi-transparent backgrounds
-- Subtle shadows for depth perception
-- Smooth hover transitions
-- Pointer events disabled on background layer to allow dragging
+- macOS-style backdrop blur with semi-transparent backgrounds, subtle shadows
+- Pointer events disabled on background layer to allow widget dragging
 
 ## Known Issues & Considerations
 
@@ -206,18 +185,12 @@ The timer widget uses macOS-style glassmorphism:
 - **Solution**: Updated tsconfig.json with proper module resolution settings
 - **Status**: ✅ Build now succeeds with zero errors
 
-### Browser Compatibility
+### Browser Compatibility & Performance
 
-- **Import Maps**: Uses browser-native import maps (requires modern browsers)
-- **Tailwind CDN**: Loaded via CDN for simplicity (consider bundling for production)
-- **CSS Properties**: Uses modern CSS like `backdrop-filter` (check caniuse.com)
-
-### Performance Considerations
-
-- Background images are loaded from Unsplash CDN
-- Images are pre-sized (1920px) to avoid loading huge files
-- Consider adding loading states if network is slow
-- setInterval is cleared on component unmount (no memory leaks)
+- Requires modern browsers (import maps, `backdrop-filter` CSS)
+- Tailwind loaded via CDN (consider bundling for production)
+- Background images from Unsplash CDN (pre-sized 1920px)
+- `setInterval` cleanup prevents memory leaks
 
 ## Dependencies & Versions
 
@@ -245,10 +218,8 @@ The timer widget uses macOS-style glassmorphism:
 
 ## Deployment
 
-**Platform**: Cloudflare Workers
-- Uses Wrangler for deployment: `npm run deploy`
-- CDN-based asset delivery for optimal performance
-- Consider environment variables for Gemini API key in production
+- **Platform**: Cloudflare Workers via Wrangler (`npm run deploy`)
+- **Note**: Set Gemini API key as environment variable in production
 
 ## Git Workflow
 
@@ -300,18 +271,11 @@ Before committing code, ensure:
 
 ## Resources
 
-### Official Documentation (Query via claude-code-guide agent)
-- **Claude Code Documentation**: https://code.claude.com/docs
-- **Claude Code Memory Guide**: https://code.claude.com/docs/en/memory.md
-- **React 19 Documentation**: https://react.dev/blog/2024/04/25/react-19
-- **useCallback Best Practices**: https://react.dev/reference/react/useCallback
-- **React Hooks Reference**: https://react.dev/reference/react
-
-### Additional Resources
-- **TypeScript Handbook**: https://www.typescriptlang.org/docs/
-- **Vite Guide**: https://vitejs.dev/guide/
-- **Unsplash API**: https://unsplash.com/developers (for background images)
-- **Tailwind CSS**: https://tailwindcss.com/docs
+**Official Documentation** (query via `claude-code-guide` agent):
+- Claude Code: https://code.claude.com/docs
+- React 19: https://react.dev
+- TypeScript: https://www.typescriptlang.org/docs
+- Vite: https://vitejs.dev/guide
 
 ## Team Notes
 
