@@ -32,12 +32,21 @@ export const TimerWidget: React.FC = () => {
   const [smartPrompt, setSmartPrompt] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiInput, setShowAiInput] = useState(false);
+  const [now, setNow] = useState(new Date());
   
   // Use a ref to hold the wake lock sentinel (using any to bypass strict TS checks for experimental API)
   const wakeLockRef = useRef<any>(null);
 
   // Initial center position (approx)
   const { position, handleMouseDown, isDragging } = useDraggable({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
+
+  // Clock Tick (Current Time)
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   // Timer Tick
   useEffect(() => {
@@ -229,6 +238,10 @@ export const TimerWidget: React.FC = () => {
     boxGlowStyle = '0 0 40px rgba(244, 63, 94, 0.3), inset 0 0 0 1px rgba(251, 113, 133, 0.3)';
   }
 
+  // Current Date Formatting
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
   return (
     <div
       className={`fixed select-none transition-shadow duration-300 ease-in-out ${
@@ -253,10 +266,17 @@ export const TimerWidget: React.FC = () => {
     >
       <div className="relative px-8 py-8 flex flex-col items-center justify-center min-h-[160px]">
         
+        {/* Top Date/Time Header */}
+        <div className="absolute top-6 w-full flex justify-center pointer-events-none">
+          <span className="text-[10px] font-bold text-zinc-500/80 tracking-[0.2em] font-sans">
+            {dayName} {timeString}
+          </span>
+        </div>
+
         {/* Toggle between Time Display and AI Input */}
         {!isEditing ? (
             <div 
-              className="relative group cursor-pointer"
+              className="relative group cursor-pointer mt-2" // Added mt-2 to offset slightly for header
               onClick={handleTimeClick}
               title="Click to edit duration"
             >
@@ -285,7 +305,7 @@ export const TimerWidget: React.FC = () => {
               </div>
             </div>
         ) : (
-          <div className="w-full flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-200">
+          <div className="w-full flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-200 mt-2">
              {!showAiInput ? (
                 // Manual Minutes Input
                 <div className="flex items-center gap-2">
