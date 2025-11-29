@@ -38,7 +38,7 @@ export const TimerWidget: React.FC = () => {
   const wakeLockRef = useRef<any>(null);
 
   // Initial center position (approx)
-  const { position, handleMouseDown, isDragging } = useDraggable({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
+  const { position, handleMouseDown, handleTouchStart, isDragging } = useDraggable({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
 
   // Clock Tick (Current Time)
   useEffect(() => {
@@ -261,6 +261,7 @@ export const TimerWidget: React.FC = () => {
         zIndex: 9999,
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >

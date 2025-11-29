@@ -11,11 +11,25 @@ export const useDraggable = (initialPosition: Position) => {
     if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'BUTTON') {
       return;
     }
-    
+
     setIsDragging(true);
     setOffset({
       x: e.clientX - position.x,
       y: e.clientY - position.y
+    });
+  }, [position]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Prevent dragging if interacting with inputs or buttons
+    if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'BUTTON') {
+      return;
+    }
+
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setOffset({
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y
     });
   }, [position]);
 
@@ -28,7 +42,21 @@ export const useDraggable = (initialPosition: Position) => {
     }
   }, [isDragging, offset]);
 
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (isDragging) {
+      const touch = e.touches[0];
+      setPosition({
+        x: touch.clientX - offset.x,
+        y: touch.clientY - offset.y
+      });
+    }
+  }, [isDragging, offset]);
+
   const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
   }, []);
 
@@ -36,15 +64,21 @@ export const useDraggable = (initialPosition: Position) => {
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
     } else {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  return { position, handleMouseDown, isDragging };
+  return { position, handleMouseDown, handleTouchStart, isDragging };
 };
