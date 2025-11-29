@@ -287,7 +287,7 @@ export const TimerWidget: React.FC = () => {
         
         {/* Top Date/Time Header */}
         <div className="absolute top-6 w-full flex justify-center pointer-events-none">
-          <span className="text-[10px] font-bold text-zinc-500/80 tracking-[0.2em] font-sans">
+          <span className="text-xs font-bold text-white/90 tracking-[0.2em] font-sans drop-shadow-sm">
             {dayName} {timeString}
           </span>
         </div>
