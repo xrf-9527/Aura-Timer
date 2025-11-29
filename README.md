@@ -2,7 +2,7 @@
 
 A minimalist macOS-style floating timer widget with AI-powered time editing and eye-friendly rotating backgrounds.
 
-![Aura Timer Preview](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
+![Aura Timer Preview](header.jpeg)
 
 ## 🚀 Try It Now
 
