@@ -6,7 +6,7 @@ name = "aura-timer"
 
 # Required: Compatibility date (YYYY-MM-DD format)
 # Use latest date for newest runtime features and optimizations
-compatibility_date = "2025-01-15"
+compatibility_date = "2025-11-29"
 
 # Compatibility flags for Node.js APIs and modern features
 # nodejs_compat_v2: Required for process.env and Node.js compatibility
