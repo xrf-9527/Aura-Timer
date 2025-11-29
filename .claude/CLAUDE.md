@@ -33,6 +33,113 @@ npm run deploy          # Deploy to Cloudflare Workers
 2. Run `npm install` to install all dependencies
 3. The project uses ESM import maps for browser module loading
 
+## SessionStart Hook (Auto-Initialization)
+
+### Overview
+
+This project uses a **SessionStart hook** to automatically install dependencies when Claude Code starts in web/remote environments. This ensures a consistent development environment without manual setup.
+
+**Configuration**: `.claude/settings.json`
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/scripts/install_deps.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### How It Works
+
+The hook script (`scripts/install_deps.sh`) implements a **hybrid strategy**:
+
+1. **Environment Detection**: Only runs in Claude Code web/remote sessions (`$CLAUDE_CODE_REMOTE == "true"`)
+2. **Dependency Check**: Verifies if React, Vite, and TypeScript are already installed
+3. **Smart Installation**:
+   - Prefers `npm ci` (faster, more reliable, follows package-lock.json exactly)
+   - Falls back to `npm install` if `npm ci` fails
+4. **Environment Variables**: Persists `NODE_ENV=development` to session
+5. **Validation**: Checks all critical dependencies after installation
+
+### Performance Characteristics
+
+| Metric | Value |
+|--------|-------|
+| **First run** (clean install) | ~30s with npm ci |
+| **Subsequent runs** (deps exist) | ~1s (skip detection) |
+| **Fallback** (npm install) | ~60s |
+| **Network failure** | Session fails to start (expected behavior) |
+
+### Security Considerations
+
+⚠️ **Important**: SessionStart hooks run automatically with full environment credentials.
+
+**Mitigations in place**:
+- ✅ Restricted to web/remote environments only (local dev unaffected)
+- ✅ Uses `npm ci` to enforce exact versions from `package-lock.json`
+- ✅ No arbitrary code execution (only npm install)
+- ✅ `--no-audit --no-fund` flags to reduce attack surface
+
+**Required maintenance**:
+- Keep `package-lock.json` committed to git
+- Review dependency updates before committing lock file changes
+- Audit dependencies regularly (monthly recommended)
+
+### Troubleshooting
+
+**Hook fails with "command not found"**:
+- Ensure `scripts/install_deps.sh` is executable: `chmod +x scripts/install_deps.sh`
+
+**Hook takes too long (>2 minutes)**:
+- Check network connectivity to npm registry
+- Consider disabling hook for debugging: comment out in `settings.json`
+
+**Dependencies missing after hook runs**:
+- Check hook output in Claude Code session logs
+- Manually run: `./scripts/install_deps.sh` to see detailed errors
+- Verify `package-lock.json` is present and valid
+
+**Hook doesn't run in local development**:
+- ✅ This is expected behavior! Local environments are skipped
+- Manually run `npm install` for local development
+
+### Disabling the Hook
+
+To temporarily disable auto-installation:
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "SessionStart": []  // Empty array disables all SessionStart hooks
+  }
+}
+```
+
+Or comment out the hook:
+```json
+{
+  "hooks": {
+    // "SessionStart": [ ... ]  // Commented out
+  }
+}
+```
+
+### Related Resources
+
+- [Claude Code Hooks Documentation](https://code.claude.com/docs/en/hooks)
+- [SessionStart Hook Guide](https://code.claude.com/docs/en/hooks-guide)
+- [Claude Code on the Web](https://code.claude.com/docs/en/claude-code-on-the-web)
+
 ## Working with Claude Code Agent
 
 ### Querying Official Documentation (IMPORTANT)
