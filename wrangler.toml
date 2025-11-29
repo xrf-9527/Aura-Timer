@@ -1,0 +1,64 @@
+# Cloudflare Workers / Pages Configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+# Required: Worker/Project name (alphanumeric and dashes only)
+name = "aura-timer"
+
+# Required: Compatibility date (YYYY-MM-DD format)
+# Use latest date for newest runtime features and optimizations
+compatibility_date = "2025-01-15"
+
+# Compatibility flags for Node.js APIs and modern features
+# nodejs_compat_v2: Required for process.env and Node.js compatibility
+compatibility_flags = ["nodejs_compat_v2"]
+
+# Static Assets Configuration
+# For Vite/React builds, this points to the build output directory
+[assets]
+directory = "./dist"
+# Optional: Create a binding to programmatically access assets in Worker code
+# binding = "ASSETS"
+# HTML handling for clean URLs
+html_handling = "auto-trailing-slash"
+# Custom 404 page handling
+not_found_handling = "single-page-application"
+
+# Environment Variables (non-sensitive)
+# NOTE: For sensitive values (API keys, secrets), use .dev.vars for local development
+# and Cloudflare dashboard or wrangler secret for production
+[vars]
+# Add non-sensitive environment variables here
+# Example: ENV = "production"
+
+# Development Configuration
+[dev]
+# Local development server settings
+ip = "127.0.0.1"
+port = 8787
+local_protocol = "http"
+
+# Observability Configuration (recommended for production)
+# Enables request logging and monitoring
+[observability]
+enabled = true
+# Sample 10% of requests for logs (adjust based on traffic volume)
+head_sampling_rate = 0.1
+
+# Preserve dashboard-set variables (if any)
+# Set to true to prevent wrangler from overwriting dashboard changes
+# keep_vars = false
+
+# Optional: Staging Environment Configuration
+# Uncomment and configure for multi-environment deployments
+# [env.staging]
+# name = "aura-timer-staging"
+# compatibility_date = "2025-01-15"
+# [env.staging.vars]
+# ENV = "staging"
+
+# Optional: Production Environment Configuration
+# [env.production]
+# name = "aura-timer-production"
+# compatibility_date = "2025-01-15"
+# [env.production.vars]
+# ENV = "production"

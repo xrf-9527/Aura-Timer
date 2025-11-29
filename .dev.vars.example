@@ -1,0 +1,7 @@
+# Local Development Environment Variables
+# Copy this file to .dev.vars and fill in your actual values
+# .dev.vars is gitignored and will NOT be committed to version control
+
+# Google Gemini API Key
+# Get your API key from: https://ai.google.dev/
+API_KEY=your_google_gemini_api_key_here

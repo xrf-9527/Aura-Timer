@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Cloudflare secrets (NEVER commit these!)
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+
+# Wrangler state
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
