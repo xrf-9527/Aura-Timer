@@ -89,25 +89,57 @@ export const useDraggable = (
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  // Auto-center on screen rotation (detect aspect ratio change)
+  // Auto-center on screen rotation (progressive enhancement approach)
   useEffect(() => {
+    const recenterWidget = () => {
+      const centerX = (window.innerWidth - widgetSize.width) / 2;
+      const centerY = (window.innerHeight - widgetSize.height) / 2;
+      setPosition({ x: centerX, y: centerY });
+    };
+
+    // Strategy 1: Screen Orientation API (modern, best performance)
+    // Only triggers on actual device rotation, no debounce needed
+    if (screen?.orientation) {
+      const handleOrientationChange = () => {
+        recenterWidget();
+        prevAspectRatio.current = window.innerWidth / window.innerHeight;
+      };
+
+      screen.orientation.addEventListener('change', handleOrientationChange);
+      return () => {
+        screen.orientation.removeEventListener('change', handleOrientationChange);
+      };
+    }
+
+    // Strategy 2: matchMedia (fallback for older devices)
+    // More precise than resize, monitors CSS orientation media query
+    const portraitQuery = window.matchMedia('(orientation: portrait)');
+    if (portraitQuery?.addEventListener) {
+      const handleMediaChange = () => {
+        recenterWidget();
+        prevAspectRatio.current = window.innerWidth / window.innerHeight;
+      };
+
+      portraitQuery.addEventListener('change', handleMediaChange);
+      return () => {
+        portraitQuery.removeEventListener('change', handleMediaChange);
+      };
+    }
+
+    // Strategy 3: resize + aspect ratio (universal fallback)
+    // Debounced for performance, detects significant aspect ratio changes
     let resizeTimer: ReturnType<typeof setTimeout>;
 
     const handleResize = () => {
       const currentAspectRatio = window.innerWidth / window.innerHeight;
       const aspectRatioChanged = Math.abs(currentAspectRatio - prevAspectRatio.current) > 0.1;
 
-      // If aspect ratio significantly changed (usually screen rotation), recenter widget
       if (aspectRatioChanged) {
-        const centerX = (window.innerWidth - widgetSize.width) / 2;
-        const centerY = (window.innerHeight - widgetSize.height) / 2;
-
-        setPosition({ x: centerX, y: centerY });
+        recenterWidget();
         prevAspectRatio.current = currentAspectRatio;
       }
     };
 
-    // Debounce to avoid frequent calculations
     const debouncedResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(handleResize, 150);
