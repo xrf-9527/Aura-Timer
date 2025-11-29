@@ -37,8 +37,18 @@ export const TimerWidget: React.FC = () => {
   // Use a ref to hold the wake lock sentinel (using any to bypass strict TS checks for experimental API)
   const wakeLockRef = useRef<any>(null);
 
-  // Initial center position (approx)
-  const { position, handleMouseDown, handleTouchStart, isDragging } = useDraggable({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
+  // Widget dimensions (must match actual rendered size)
+  const WIDGET_WIDTH = 340;
+  const WIDGET_HEIGHT = 200;
+
+  // Initial center position
+  const { position, handleMouseDown, handleTouchStart, isDragging } = useDraggable(
+    {
+      x: window.innerWidth / 2 - WIDGET_WIDTH / 2,
+      y: window.innerHeight / 2 - WIDGET_HEIGHT / 2
+    },
+    { width: WIDGET_WIDTH, height: WIDGET_HEIGHT }
+  );
 
   // Clock Tick (Current Time)
   useEffect(() => {
