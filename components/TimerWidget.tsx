@@ -54,8 +54,10 @@ export const TimerWidget: React.FC = () => {
   // Detect mobile/touch device (using modern matchMedia API for optimal performance)
   useEffect(() => {
     const checkMobile = () => {
-      // Check for touch capability and small screen size
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      // Check for touch capability: hardware + pointer type (most robust per MDN 2025)
+      const isTouchDevice = 'ontouchstart' in window ||
+                            navigator.maxTouchPoints > 0 ||
+                            window.matchMedia('(any-pointer:coarse)').matches;
       const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
       setIsMobile(isTouchDevice && isSmallScreen);
     };
