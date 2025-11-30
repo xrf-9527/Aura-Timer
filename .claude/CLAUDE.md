@@ -128,6 +128,7 @@ This creates **clear guardrails** for future development and prevents repeating 
 - **DO NOT use `useCallback` by default** - Move functions inside `useEffect` when only used there ([official guidance](https://react.dev/reference/react/useCallback))
 - **DO** use primitive dependencies in `useEffect` dependency arrays, not function references
 - **DO** use named exports for components, default export only for App.tsx
+- **PREFER `matchMedia` API over `resize` events** - For responsive breakpoints, use `window.matchMedia('(max-width: 768px)').addEventListener('change', handler)` instead of resize events. Only fires when crossing thresholds, not on every pixel change. Include `addListener` fallback for Safari < 14. (See: useDraggable.ts:114-127, TimerWidget.tsx:54-79)
 
 ### TypeScript Configuration
 

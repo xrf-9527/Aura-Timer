@@ -33,7 +33,8 @@ export const TimerWidget: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiInput, setShowAiInput] = useState(false);
   const [now, setNow] = useState(new Date());
-  
+  const [isMobile, setIsMobile] = useState(false);
+
   // Use a ref to hold the wake lock sentinel (using any to bypass strict TS checks for experimental API)
   const wakeLockRef = useRef<any>(null);
 
@@ -49,6 +50,35 @@ export const TimerWidget: React.FC = () => {
     },
     { width: WIDGET_WIDTH, height: WIDGET_HEIGHT }
   );
+
+  // Detect mobile/touch device (using modern matchMedia API for optimal performance)
+  useEffect(() => {
+    const checkMobile = () => {
+      // Check for touch capability: hardware + pointer type (most robust per MDN 2025)
+      const isTouchDevice = 'ontouchstart' in window ||
+                            navigator.maxTouchPoints > 0 ||
+                            window.matchMedia('(any-pointer:coarse)').matches;
+      const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+      setIsMobile(isTouchDevice && isSmallScreen);
+    };
+
+    // Initial check
+    checkMobile();
+
+    // Use matchMedia change listener for efficient screen size monitoring
+    // More performant than resize events - only fires when media query result changes
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    // Modern API (addEventListener) with fallback for older browsers
+    if (mediaQuery?.addEventListener) {
+      mediaQuery.addEventListener('change', checkMobile);
+      return () => mediaQuery.removeEventListener('change', checkMobile);
+    } else if (mediaQuery?.addListener) {
+      // Fallback for Safari < 14
+      mediaQuery.addListener(checkMobile);
+      return () => mediaQuery.removeListener(checkMobile);
+    }
+  }, []);
 
   // Clock Tick (Current Time)
   useEffect(() => {
@@ -388,10 +418,12 @@ export const TimerWidget: React.FC = () => {
           </div>
         )}
 
-        {/* Controls - Fade in on Hover or Pause */}
-        <div 
+        {/* Controls - Always visible on mobile, hover-triggered on desktop */}
+        <div
           className={`absolute -bottom-5 flex items-center gap-4 transition-all duration-300 ease-out transform ${
-            isHovering || status === TimerStatus.PAUSED ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 pointer-events-none'
+            isMobile || isHovering || status === TimerStatus.PAUSED
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-2 opacity-0 pointer-events-none'
           }`}
         >
           <button 
