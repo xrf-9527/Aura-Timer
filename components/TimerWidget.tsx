@@ -51,7 +51,7 @@ export const TimerWidget: React.FC = () => {
     { width: WIDGET_WIDTH, height: WIDGET_HEIGHT }
   );
 
-  // Detect mobile/touch device
+  // Detect mobile/touch device (using modern matchMedia API for optimal performance)
   useEffect(() => {
     const checkMobile = () => {
       // Check for touch capability and small screen size
@@ -60,9 +60,22 @@ export const TimerWidget: React.FC = () => {
       setIsMobile(isTouchDevice && isSmallScreen);
     };
 
+    // Initial check
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+
+    // Use matchMedia change listener for efficient screen size monitoring
+    // More performant than resize events - only fires when media query result changes
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    // Modern API (addEventListener) with fallback for older browsers
+    if (mediaQuery?.addEventListener) {
+      mediaQuery.addEventListener('change', checkMobile);
+      return () => mediaQuery.removeEventListener('change', checkMobile);
+    } else if (mediaQuery?.addListener) {
+      // Fallback for Safari < 14
+      mediaQuery.addListener(checkMobile);
+      return () => mediaQuery.removeListener(checkMobile);
+    }
   }, []);
 
   // Clock Tick (Current Time)
