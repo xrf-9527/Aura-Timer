@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 // --- Icons ---
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
-    <svg
+    <motion.svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
         height="20"
@@ -13,10 +14,23 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`transition-transform duration-300 ${filled ? 'scale-110 text-rose-500' : 'scale-100 text-zinc-400 group-hover:text-rose-400'}`}
+        initial={false}
+        animate={{
+            scale: filled ? 1.1 : 1,
+            color: filled ? "#f43f5e" : "#a1a1aa" // rose-500 : zinc-400
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        className={`group-hover:text-rose-400 ${!filled && 'text-zinc-400'}`}
     >
-        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-    </svg>
+        <motion.path
+            d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+            initial={false}
+            animate={{
+                fillOpacity: filled ? 1 : 0,
+            }}
+            transition={{ duration: 0.2 }}
+        />
+    </motion.svg>
 );
 
 const GitHubIcon = () => (
@@ -32,12 +46,53 @@ const TwitterIcon = () => (
     </svg>
 );
 
-// --- Component ---
+// --- Components ---
+
+const NumberTicker = ({ value }: { value: number }) => {
+    return (
+        <div className="relative h-5 w-auto min-w-[1.5rem] overflow-hidden flex items-center justify-center">
+            <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                    key={value}
+                    initial={{ y: 20, opacity: 0, filter: "blur(4px)" }}
+                    animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                    exit={{ y: -20, opacity: 0, filter: "blur(4px)" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="absolute text-sm font-mono font-medium text-zinc-400 group-hover:text-zinc-200"
+                >
+                    {value.toLocaleString()}
+                </motion.span>
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const ParticleBurst = () => {
+    const particles = Array.from({ length: 6 });
+    return (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            {particles.map((_, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                    animate={{
+                        scale: 0,
+                        opacity: 0,
+                        x: Math.cos(i * 60 * (Math.PI / 180)) * 20,
+                        y: Math.sin(i * 60 * (Math.PI / 180)) * 20,
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="absolute w-1 h-1 bg-rose-400 rounded-full"
+                />
+            ))}
+        </div>
+    );
+};
 
 export const ActionDock: React.FC = () => {
     const [likes, setLikes] = useState<number>(0);
     const [isLiked, setIsLiked] = useState(false);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const [showParticles, setShowParticles] = useState(false);
 
     // Fetch initial likes
     useEffect(() => {
@@ -54,10 +109,8 @@ export const ActionDock: React.FC = () => {
         // Optimistic update
         setLikes(prev => prev + 1);
         setIsLiked(true);
-        setIsAnimating(true);
-
-        // Reset animation state
-        setTimeout(() => setIsAnimating(false), 1000);
+        setShowParticles(true);
+        setTimeout(() => setShowParticles(false), 1000);
 
         try {
             await fetch('/api/likes', { method: 'POST' });
@@ -74,23 +127,19 @@ export const ActionDock: React.FC = () => {
             <div className="flex items-center gap-1 px-2 py-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl ring-1 ring-black/5">
 
                 {/* Like Section */}
-                <button
+                <motion.button
                     onClick={handleLike}
-                    className="group relative flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 transition-all duration-300"
+                    whileTap={{ scale: 0.9 }}
+                    className="group relative flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 transition-colors duration-300"
                     title="Like this timer"
                 >
-                    <div className={`relative ${isAnimating ? 'animate-bounce' : ''}`}>
+                    <div className="relative">
                         <HeartIcon filled={isLiked} />
+                        {showParticles && <ParticleBurst />}
                     </div>
-                    <span className="text-sm font-mono font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors min-w-[1.5rem] text-center">
-                        {likes.toLocaleString()}
-                    </span>
 
-                    {/* Particle/Glow Effect on Click */}
-                    {isAnimating && (
-                        <div className="absolute inset-0 rounded-full animate-ping bg-rose-500/10 pointer-events-none"></div>
-                    )}
-                </button>
+                    <NumberTicker value={likes} />
+                </motion.button>
 
                 {/* Divider */}
                 <div className="w-px h-6 bg-white/10 mx-1"></div>
