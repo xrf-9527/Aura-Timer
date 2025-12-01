@@ -1,6 +1,6 @@
 ---
 description: Optimize and tighten CLAUDE.md to reduce token usage while preserving essential information
-allowed-tools: Read(.claude/CLAUDE.md), Edit(.claude/CLAUDE.md)
+allowed-tools: Read, Edit
 model: sonnet
 ---
 

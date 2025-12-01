@@ -1,7 +1,7 @@
 ---
 description: Update CLAUDE.md with new lessons learned, patterns, or guidelines
 argument-hint: <section> <guideline>
-allowed-tools: Read(.claude/CLAUDE.md), Edit(.claude/CLAUDE.md)
+allowed-tools: Read, Edit
 model: sonnet
 ---
 

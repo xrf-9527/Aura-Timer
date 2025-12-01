@@ -1,6 +1,6 @@
 ---
 description: Run TypeScript and Vite build checks, analyze and fix any errors
-allowed-tools: Bash(npm run build:*), Bash(npm run:*), Bash(npx tsc:*)
+allowed-tools: Bash(npm:*), Bash(npx:*)
 model: sonnet
 ---
 

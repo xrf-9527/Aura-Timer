@@ -1,7 +1,7 @@
 ---
 description: Review code against project best practices defined in CLAUDE.md
 argument-hint: [file-path]
-allowed-tools: Read(*), Grep(*.tsx), Grep(*.ts), Bash(git diff:*)
+allowed-tools: Read, Grep, Bash(git:*)
 model: sonnet
 ---
 
@@ -21,10 +21,13 @@ If no file specified, review recent changes:
 Reference the standards defined in `.claude/CLAUDE.md`:
 
 ### React 19.2 Patterns (CRITICAL)
-- ❌ **Flag**: Any `useCallback` usage (should move functions inside `useEffect`)
-- ❌ **Flag**: Function references in `useEffect` dependency arrays
+- ⚠️ **Review**: `useCallback` usage - only justified when:
+  - Function is passed to memoized child components
+  - Function is used as dependency in other hooks
+  - Otherwise, move functions inside `useEffect` or keep them inline
+- ❌ **Flag**: Unnecessary `useCallback` wrapping functions only used in one place
 - ✅ **Verify**: Functions are defined inside `useEffect` when only used there
-- ✅ **Verify**: Dependency arrays only contain primitive values
+- ✅ **Verify**: Dependency arrays include all reactive values used
 - ✅ **Verify**: Named exports for components (except App.tsx)
 
 ### TypeScript Patterns
