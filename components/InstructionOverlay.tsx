@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const InstructionOverlay: React.FC = () => {
     const [isMinimized, setIsMinimized] = useState(false);
 
     return (
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence initial={false}>
             {isMinimized ? (
                 <motion.button
                     key="minimized-button"
@@ -19,14 +19,28 @@ export const InstructionOverlay: React.FC = () => {
                         damping: 30
                     }}
                     onClick={() => setIsMinimized(false)}
+                    style={{ willChange: "transform, opacity" }}
                     className="absolute top-8 left-8 z-10 group flex items-center justify-center w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white/70 hover:bg-black/40 hover:text-white shadow-lg"
                     title="Show Instructions"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <motion.svg
+                        layout
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                    </svg>
+                    </motion.svg>
                 </motion.button>
             ) : (
                 <motion.div
@@ -40,11 +54,13 @@ export const InstructionOverlay: React.FC = () => {
                         stiffness: 400,
                         damping: 30
                     }}
+                    style={{ willChange: "transform, opacity, filter" }}
                     className="absolute top-8 left-8 z-10 w-80 p-5 rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] text-white overflow-hidden"
                 >
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: { duration: 0.1 } }}
                         transition={{ delay: 0.1 }}
                         className="flex items-center justify-between mb-4"
                     >
@@ -67,6 +83,7 @@ export const InstructionOverlay: React.FC = () => {
                     <motion.ul
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, transition: { duration: 0.1 } }}
                         transition={{ delay: 0.2 }}
                         className="space-y-3 text-[13px] text-white/80 font-sans tracking-wide"
                     >
@@ -116,6 +133,7 @@ export const InstructionOverlay: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, transition: { duration: 0.1 } }}
                         transition={{ delay: 0.3 }}
                         className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/40 italic font-sans"
                     >
