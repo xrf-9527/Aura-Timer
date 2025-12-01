@@ -172,6 +172,32 @@ This creates **clear guardrails** for future development and prevents repeating 
 - Preloads next image to prevent loading flashes
 - **Pattern**: Functions inside `useEffect` (React 19.2 best practice) with primitive dependencies only
 
+### High-Precision Timer System
+
+**Problem Solved**: Traditional `setInterval`-based timers accumulate drift over time (10-30s error per hour)
+
+**Solution** (`components/TimerWidget.tsx:96-136`):
+- **Timestamp-based calculation**: Records target expiry time (`Date.now() + duration`), recalculates remaining time each tick
+- **Zero cumulative error**: Each update is independent, errors don't compound
+- **100ms tick interval**: Smooth visual updates (10Hz) while only re-rendering when seconds change
+- **Industry standard**: Based on react-timer-hook, MDN guidance, Stack Overflow consensus
+
+**Key Implementation**:
+```typescript
+expiryTimestampRef.current = Date.now() + timeLeft * 1000;
+setInterval(() => {
+  const remaining = Math.floor((expiryTimestampRef.current - Date.now()) / 1000);
+  setTimeLeft(prev => remaining !== prev ? remaining : prev); // Only update on second change
+}, 100);
+```
+
+**Benefits**:
+- Accurate over hours (±1s precision vs ±30s drift with tick counting)
+- Resilient to background tab throttling
+- Handles pause/resume correctly (clears timestamp on pause)
+
+**Full documentation**: See `TIMER_PRECISION.md` for algorithm details, testing guide, and references
+
 ### Glassmorphism Design
 
 - macOS-style backdrop blur with semi-transparent backgrounds, subtle shadows
