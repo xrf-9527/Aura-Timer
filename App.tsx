@@ -1,5 +1,6 @@
 import { TimerWidget } from './components/TimerWidget';
 import { BackgroundLayer } from './components/BackgroundLayer';
+import { SocialLinks } from './components/SocialLinks';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
       </div>
 
       <TimerWidget />
+      <SocialLinks />
     </div>
   );
 }
