@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TimerStatus } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { getDurationFromQuery } from '../services/geminiService';
+import { usePiP } from '../hooks/usePiP';
 
 // Icons
 const PlayIcon = () => (
@@ -18,6 +19,9 @@ const SparklesIcon = () => (
 );
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
+const PiPIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" opacity="0.1"></rect><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><rect x="12" y="12" width="7" height="4" rx="1" fill="currentColor" fillOpacity="0.2"></rect></svg>
 );
 
 const DEFAULT_TIME = 15 * 60; // 15 minutes
@@ -50,8 +54,8 @@ export const TimerWidget: React.FC = () => {
   // Initial center position
   const { position, handleMouseDown, handleTouchStart, isDragging } = useDraggable(
     {
-      x: window.innerWidth / 2 - WIDGET_WIDTH / 2,
-      y: window.innerHeight / 2 - WIDGET_HEIGHT / 2
+      x: typeof window !== 'undefined' ? window.innerWidth / 2 - WIDGET_WIDTH / 2 : 0,
+      y: typeof window !== 'undefined' ? window.innerHeight / 2 - WIDGET_HEIGHT / 2 : 0
     },
     { width: WIDGET_WIDTH, height: WIDGET_HEIGHT }
   );
@@ -61,8 +65,8 @@ export const TimerWidget: React.FC = () => {
     const checkMobile = () => {
       // Check for touch capability: hardware + pointer type (most robust per MDN 2025)
       const isTouchDevice = 'ontouchstart' in window ||
-                            navigator.maxTouchPoints > 0 ||
-                            window.matchMedia('(any-pointer:coarse)').matches;
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(any-pointer:coarse)').matches;
       const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
       setIsMobile(isTouchDevice && isSmallScreen);
     };
@@ -174,7 +178,7 @@ export const TimerWidget: React.FC = () => {
     } else {
       releaseWakeLock();
     }
-    
+
     // Cleanup on unmount
     return () => {
       releaseWakeLock();
@@ -185,7 +189,7 @@ export const TimerWidget: React.FC = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && status === TimerStatus.RUNNING) {
-         requestWakeLock();
+        requestWakeLock();
       }
     };
 
@@ -283,20 +287,20 @@ export const TimerWidget: React.FC = () => {
   const isOvertime = timeLeft < 0;
   // Warning only applies if not in overtime and within last 5 minutes
   const isWarning = !isOvertime && timeLeft <= 5 * 60 && status === TimerStatus.RUNNING;
-  
+
   const absSeconds = Math.abs(timeLeft);
   const timeDisplay = formatTime(absSeconds);
-  
+
   // Show hours if the timer was set to > 1hr OR if we have drifted past 1hr in overtime
   const showHours = totalSeconds >= 3600 || absSeconds >= 3600;
 
   // Colon breathing logic:
   // Toggle opacity based on even/odd seconds when running.
   // Using absSeconds ensures smooth cycle even in negatives.
-  const colonOpacityClass = status === TimerStatus.RUNNING 
-    ? (absSeconds % 2 === 0 ? 'opacity-100' : 'opacity-40') 
+  const colonOpacityClass = status === TimerStatus.RUNNING
+    ? (absSeconds % 2 === 0 ? 'opacity-100' : 'opacity-40')
     : 'opacity-100';
-    
+
   // Adjust font size and alignment based on whether hours are shown
   const fontSizeClass = showHours ? 'text-5xl' : 'text-7xl';
   // Vertical alignment adjustment for the colon to keep it centered
@@ -308,7 +312,7 @@ export const TimerWidget: React.FC = () => {
   // Standard: Zinc-200 (Soft Grey-White)
   // Overtime: Amber-300 (Soft Gold)
   // Warning: Rose-400 (Soft Pastel Red)
-  
+
   let textColorClass = 'text-zinc-200 drop-shadow-sm';
   let boxGlowStyle = '0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1)';
 
@@ -324,11 +328,29 @@ export const TimerWidget: React.FC = () => {
   const dayName = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
+  // PiP Integration
+  const pipCallbacks = React.useMemo(() => ({
+    onToggle: toggleTimer,
+    onReset: resetTimer,
+    onClose: () => { }
+  }), [toggleTimer, resetTimer]);
+
+  const { togglePiP, isPiPActive } = usePiP(
+    {
+      timeLeft,
+      totalSeconds,
+      status,
+      timeString: timeDisplay,
+      isOvertime,
+      isWarning
+    },
+    pipCallbacks
+  );
+
   return (
     <div
-      className={`fixed select-none transition-shadow duration-300 ease-in-out ${
-        isDragging ? 'cursor-grabbing' : 'cursor-default'
-      }`}
+      className={`fixed select-none transition-shadow duration-300 ease-in-out ${isDragging ? 'cursor-grabbing' : 'cursor-default'
+        }`}
       style={{
         left: 0,
         top: 0,
@@ -356,7 +378,7 @@ export const TimerWidget: React.FC = () => {
       onMouseLeave={() => setIsHovering(false)}
     >
       <div className="relative px-8 py-8 flex flex-col items-center justify-center min-h-[160px]">
-        
+
         {/* Top Date/Time Header */}
         <div className="absolute top-6 w-full flex justify-center pointer-events-none">
           <span className="text-xs font-bold text-white/90 tracking-[0.2em] font-sans drop-shadow-sm">
@@ -366,120 +388,127 @@ export const TimerWidget: React.FC = () => {
 
         {/* Toggle between Time Display and AI Input */}
         {!isEditing ? (
-            <div 
-              className="relative group cursor-pointer mt-2" // Added mt-2 to offset slightly for header
-              onClick={handleTimeClick}
-              title="Click to edit duration"
+          <div
+            className="relative group cursor-pointer mt-2" // Added mt-2 to offset slightly for header
+            onClick={handleTimeClick}
+            title="Click to edit duration"
+          >
+            <div
+              className={`flex items-center justify-center ${fontSizeClass} font-mono tracking-tighter transition-colors duration-300 ${textColorClass}`}
             >
-              <div 
-                className={`flex items-center justify-center ${fontSizeClass} font-mono tracking-tighter transition-colors duration-300 ${textColorClass}`}
-              >
-                {/* Negative sign for overtime - Aligned with colons */}
-                {isOvertime && (
-                  <span className={`mr-2 relative ${verticalOffsetClass}`}>-</span>
-                )}
+              {/* Negative sign for overtime - Aligned with colons */}
+              {isOvertime && (
+                <span className={`mr-2 relative ${verticalOffsetClass}`}>-</span>
+              )}
 
-                {showHours && (
-                  <>
-                    <span>{timeDisplay.hours}</span>
-                    <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
-                  </>
-                )}
-                <span>{timeDisplay.minutes}</span>
-                {/* Colon with synced breathing effect and vertical adjustment */}
-                <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
-                <span>{timeDisplay.seconds}</span>
-              </div>
-              {/* Subtle hint to click */}
-              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
-                Edit
-              </div>
+              {showHours && (
+                <>
+                  <span>{timeDisplay.hours}</span>
+                  <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
+                </>
+              )}
+              <span>{timeDisplay.minutes}</span>
+              {/* Colon with synced breathing effect and vertical adjustment */}
+              <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
+              <span>{timeDisplay.seconds}</span>
             </div>
+            {/* Subtle hint to click */}
+            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
+              Edit
+            </div>
+          </div>
         ) : (
           <div className="w-full flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-200 mt-2">
-             {!showAiInput ? (
-                // Manual Minutes Input
-                <div className="flex items-center gap-2">
-                   <input
-                    type="number"
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && submitEdit()}
-                    className="w-32 bg-transparent text-6xl text-center font-mono text-zinc-200 border-b-2 border-zinc-500 focus:border-zinc-200 focus:outline-none placeholder-zinc-600"
-                  />
-                  <span className="text-xl text-zinc-400 font-sans">min</span>
-                  
-                  {/* Smart Set Button */}
-                  <button 
-                    onClick={() => setShowAiInput(true)}
-                    className="ml-4 p-2 rounded-full bg-white/5 hover:bg-indigo-500/30 text-zinc-400 hover:text-indigo-200 transition-all hover:scale-105"
-                    title="Ask AI to set time"
-                  >
-                    <SparklesIcon />
-                  </button>
-                </div>
-             ) : (
-                // AI Input
-                <form onSubmit={handleAiSubmit} className="w-full flex items-center gap-2">
-                  <div className="relative w-full">
-                    <div className="absolute left-2.5 top-2.5 text-zinc-400">
-                        <SparklesIcon />
-                    </div>
-                    <input
-                      type="text"
-                      autoFocus
-                      placeholder="e.g. Boil an egg..."
-                      value={smartPrompt}
-                      onChange={(e) => setSmartPrompt(e.target.value)}
-                      className="w-full bg-black/20 text-zinc-200 text-sm pl-9 pr-8 py-2 rounded-lg border border-zinc-700 focus:border-indigo-400/50 focus:outline-none placeholder-zinc-500"
-                      disabled={isAiLoading}
-                    />
-                    {isAiLoading && (
-                        <div className="absolute right-2 top-2 w-4 h-4 border-2 border-zinc-500 border-t-zinc-200 rounded-full animate-spin"></div>
-                    )}
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAiInput(false)}
-                    className="text-zinc-500 hover:text-zinc-200"
-                  >
-                    <CloseIcon />
-                  </button>
-                </form>
-             )}
+            {!showAiInput ? (
+              // Manual Minutes Input
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitEdit()}
+                  className="w-32 bg-transparent text-6xl text-center font-mono text-zinc-200 border-b-2 border-zinc-500 focus:border-zinc-200 focus:outline-none placeholder-zinc-600"
+                />
+                <span className="text-xl text-zinc-400 font-sans">min</span>
 
-             {!showAiInput && (
-                <button 
-                  onClick={submitEdit}
-                  className="mt-2 text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-200 font-semibold"
+                {/* Smart Set Button */}
+                <button
+                  onClick={() => setShowAiInput(true)}
+                  className="ml-4 p-2 rounded-full bg-white/5 hover:bg-indigo-500/30 text-zinc-400 hover:text-indigo-200 transition-all hover:scale-105"
+                  title="Ask AI to set time"
                 >
-                  Set Timer
+                  <SparklesIcon />
                 </button>
-             )}
+              </div>
+            ) : (
+              // AI Input
+              <form onSubmit={handleAiSubmit} className="w-full flex items-center gap-2">
+                <div className="relative w-full">
+                  <div className="absolute left-2.5 top-2.5 text-zinc-400">
+                    <SparklesIcon />
+                  </div>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="e.g. Boil an egg..."
+                    value={smartPrompt}
+                    onChange={(e) => setSmartPrompt(e.target.value)}
+                    className="w-full bg-black/20 text-zinc-200 text-sm pl-9 pr-8 py-2 rounded-lg border border-zinc-700 focus:border-indigo-400/50 focus:outline-none placeholder-zinc-500"
+                    disabled={isAiLoading}
+                  />
+                  {isAiLoading && (
+                    <div className="absolute right-2 top-2 w-4 h-4 border-2 border-zinc-500 border-t-zinc-200 rounded-full animate-spin"></div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAiInput(false)}
+                  className="text-zinc-500 hover:text-zinc-200"
+                >
+                  <CloseIcon />
+                </button>
+              </form>
+            )}
+
+            {!showAiInput && (
+              <button
+                onClick={submitEdit}
+                className="mt-2 text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-200 font-semibold"
+              >
+                Set Timer
+              </button>
+            )}
           </div>
         )}
 
         {/* Controls - Always visible on mobile, hover-triggered on desktop */}
         <div
-          className={`absolute -bottom-5 flex items-center gap-4 transition-all duration-300 ease-out transform ${
-            isMobile || isHovering || status === TimerStatus.PAUSED
-              ? 'translate-y-0 opacity-100'
-              : 'translate-y-2 opacity-0 pointer-events-none'
-          }`}
+          className={`absolute -bottom-5 flex items-center gap-4 transition-all duration-300 ease-out transform ${isMobile || isHovering || status === TimerStatus.PAUSED
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-2 opacity-0 pointer-events-none'
+            }`}
         >
-          <button 
+          <button
             onClick={toggleTimer}
             className="p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 text-zinc-200 shadow-lg transition-transform active:scale-95"
           >
             {status === TimerStatus.RUNNING ? <PauseIcon /> : <PlayIcon />}
           </button>
-          
-          <button 
+
+          <button
             onClick={resetTimer}
             className="p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 text-zinc-400 hover:text-zinc-200 shadow-lg transition-transform active:scale-95"
           >
             <ResetIcon />
+          </button>
+
+          <button
+            onClick={togglePiP}
+            className={`p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 ${isPiPActive ? 'text-indigo-400' : 'text-zinc-400 hover:text-zinc-200'} shadow-lg transition-transform active:scale-95`}
+            title="Toggle Picture-in-Picture"
+          >
+            <PiPIcon />
           </button>
         </div>
       </div>

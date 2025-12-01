@@ -203,6 +203,22 @@ setInterval(() => {
 - macOS-style backdrop blur with semi-transparent backgrounds, subtle shadows
 - Pointer events disabled on background layer to allow widget dragging
 
+### Hybrid PiP Architecture
+
+**Problem Solved**: Cross-browser Picture-in-Picture support for arbitrary content (Timer).
+
+**Solution** (`services/pip/`):
+- **Strategy Pattern**: `PiPManager` selects best strategy based on browser capabilities.
+- **Document PiP (Chrome/Edge)**: Uses `documentPictureInPicture` API for interactive window. Copies styles from main window.
+- **Canvas Stream (Firefox/Safari)**: Uses `canvas.captureStream()` + hidden `<video>` element. Renders timer to canvas at 10 FPS (throttled) to minimize CPU usage.
+- **Background Reliability**: Plays silent audio loop to prevent browser from discarding the background tab.
+
+**Key Files**:
+- `services/pip/PiPManager.ts`: Entry point and strategy selector.
+- `services/pip/strategies/DocumentPiPStrategy.ts`: Interactive PiP implementation.
+- `services/pip/strategies/CanvasStreamStrategy.ts`: Video-based fallback implementation.
+- `hooks/usePiP.ts`: React hook for integration.
+
 ## Known Issues & Considerations
 
 ### TypeScript Build Errors

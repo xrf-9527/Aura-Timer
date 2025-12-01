@@ -13,7 +13,7 @@ export const useDraggable = (
   const [position, setPosition] = useState<Position>(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
-  const prevAspectRatio = useRef(window.innerWidth / window.innerHeight);
+  const prevAspectRatio = useRef(typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 1);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Prevent dragging if interacting with inputs or buttons
