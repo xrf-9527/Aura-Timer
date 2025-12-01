@@ -17,10 +17,10 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
         initial={false}
         animate={{
             scale: filled ? 1.1 : 1,
-            color: filled ? "#f43f5e" : "#a1a1aa" // rose-500 : zinc-400
+            color: filled ? "#f43f5e" : "#d4d4d8" // rose-500 : zinc-300
         }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        className={`group-hover:text-rose-400 ${!filled && 'text-zinc-400'}`}
+        className={`group-hover:text-rose-400 ${!filled && 'text-zinc-300'}`}
     >
         <motion.path
             d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
@@ -58,7 +58,7 @@ const NumberTicker = ({ value }: { value: number }) => {
                     animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
                     exit={{ y: -20, opacity: 0, filter: "blur(4px)" }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="absolute text-sm font-mono font-medium text-zinc-400 group-hover:text-zinc-200"
+                    className="absolute text-sm font-mono font-medium text-zinc-300 group-hover:text-white"
                 >
                     {value.toLocaleString()}
                 </motion.span>
@@ -124,13 +124,13 @@ export const ActionDock: React.FC = () => {
 
     return (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-            <div className="flex items-center gap-1 px-2 py-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl ring-1 ring-black/5">
+            <div className="flex items-center gap-1 px-2 py-2 rounded-full bg-black/20 backdrop-blur-xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.1)_inset] ring-1 ring-white/20">
 
                 {/* Like Section */}
                 <motion.button
                     onClick={handleLike}
                     whileTap={{ scale: 0.9 }}
-                    className="group relative flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 transition-colors duration-300"
+                    className="group relative flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/20 transition-colors duration-300"
                     title="Like this timer"
                 >
                     <div className="relative">
@@ -142,7 +142,7 @@ export const ActionDock: React.FC = () => {
                 </motion.button>
 
                 {/* Divider */}
-                <div className="w-px h-6 bg-white/10 mx-1"></div>
+                <div className="w-px h-6 bg-white/30 mx-1"></div>
 
                 {/* Social Links */}
                 <div className="flex items-center gap-1">
@@ -150,7 +150,7 @@ export const ActionDock: React.FC = () => {
                         href="https://github.com/xrf-9527/Aura-Timer"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2.5 rounded-full text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all duration-300 hover:-translate-y-1"
+                        className="p-2.5 rounded-full text-zinc-300 hover:text-white hover:bg-white/20 transition-all duration-300 hover:-translate-y-1"
                         title="View on GitHub"
                     >
                         <GitHubIcon />
@@ -159,7 +159,7 @@ export const ActionDock: React.FC = () => {
                         href="https://x.com/joey_cn"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2.5 rounded-full text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all duration-300 hover:-translate-y-1"
+                        className="p-2.5 rounded-full text-zinc-300 hover:text-white hover:bg-white/20 transition-all duration-300 hover:-translate-y-1"
                         title="Follow on X (Twitter)"
                     >
                         <TwitterIcon />
