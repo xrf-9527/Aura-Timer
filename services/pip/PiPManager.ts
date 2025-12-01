@@ -5,12 +5,7 @@ import { CanvasStreamStrategy } from './strategies/CanvasStreamStrategy.ts';
 // Silent audio to prevent background tab throttling
 const SILENT_AUDIO_URL = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAGZGF0YQAAAAA=';
 
-// Type augmentation for Document PiP API
-declare global {
-    interface Window {
-        documentPictureInPicture: any;
-    }
-}
+
 
 export class PiPManager {
     private static instance: PiPManager;

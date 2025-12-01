@@ -39,8 +39,8 @@ export const TimerWidget: React.FC = () => {
   const [now, setNow] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
 
-  // Use a ref to hold the wake lock sentinel (using any to bypass strict TS checks for experimental API)
-  const wakeLockRef = useRef<any>(null);
+  // Use a ref to hold the wake lock sentinel
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // High-precision timer: store target expiry timestamp to eliminate drift
   // Uses Date.now() instead of tick counting - industry standard approach (react-timer-hook, pomofocus)
@@ -141,21 +141,24 @@ export const TimerWidget: React.FC = () => {
 
   // Wake Lock Logic (Prevent Sleep)
   const requestWakeLock = useCallback(async () => {
-    if ('wakeLock' in navigator) {
-      try {
-        const lock = await (navigator as any).wakeLock.request('screen');
-        wakeLockRef.current = lock;
-        // console.log('Wake Lock acquired');
-        lock.addEventListener('release', () => {
-          // console.log('Wake Lock released');
-          wakeLockRef.current = null;
-        });
-      } catch (err: any) {
-        // If the error is "NotAllowedError", it means the browser or system policy blocked it.
-        // We suppress this specific warning to keep the console clean as the app works fine without it.
-        if (err.name !== 'NotAllowedError') {
-          console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
-        }
+    const wakeLock = navigator.wakeLock;
+    if (!wakeLock) {
+      return;
+    }
+
+    try {
+      const lock = await wakeLock.request('screen');
+      wakeLockRef.current = lock;
+      // console.log('Wake Lock acquired');
+      lock.addEventListener('release', () => {
+        // console.log('Wake Lock released');
+        wakeLockRef.current = null;
+      });
+    } catch (err: unknown) {
+      // If the error is "NotAllowedError", it means the browser or system policy blocked it.
+      // We suppress this specific warning to keep the console clean as the app works fine without it.
+      if (err instanceof Error && err.name !== 'NotAllowedError') {
+        console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
       }
     }
   }, []);
@@ -165,8 +168,10 @@ export const TimerWidget: React.FC = () => {
       try {
         await wakeLockRef.current.release();
         wakeLockRef.current = null;
-      } catch (err: any) {
-        console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
+        }
       }
     }
   }, []);

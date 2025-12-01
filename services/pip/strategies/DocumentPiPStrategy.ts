@@ -3,7 +3,7 @@ import { TimerStatus } from '../../../types';
 
 export class DocumentPiPStrategy implements IPiPStrategy {
     public isActive: boolean = false;
-    private pipWindow: any = null;
+    private pipWindow: Window | null = null;
     private callbacks: PiPCallbacks | null = null;
 
     // Cache elements for updates
@@ -14,13 +14,18 @@ export class DocumentPiPStrategy implements IPiPStrategy {
     async open(initialState: PiPState, callbacks?: PiPCallbacks): Promise<void> {
         this.callbacks = callbacks || null;
 
+        const pipApi = window.documentPictureInPicture;
+        if (!pipApi) {
+            throw new Error('Document Picture-in-Picture is not supported in this browser.');
+        }
+
         // 1. Request Window
         // Use a fixed size that fits the timer content comfortably
         const width = 340;
         const height = 200;
 
         try {
-            this.pipWindow = await window.documentPictureInPicture.requestWindow({
+            this.pipWindow = await pipApi.requestWindow({
                 width,
                 height,
             });
@@ -48,6 +53,9 @@ export class DocumentPiPStrategy implements IPiPStrategy {
     }
 
     private copyStyles() {
+        const pipWin = this.pipWindow;
+        if (!pipWin) return;
+
         // Copy all stylesheets from the main window to the PiP window
         [...document.styleSheets].forEach((styleSheet) => {
             try {
@@ -55,7 +63,7 @@ export class DocumentPiPStrategy implements IPiPStrategy {
                 const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
                 const style = document.createElement('style');
                 style.textContent = cssRules;
-                this.pipWindow.document.head.appendChild(style);
+                pipWin.document.head.appendChild(style);
             } catch (e) {
                 // Fallback: Link to the external stylesheet
                 if (styleSheet.href) {
@@ -64,13 +72,14 @@ export class DocumentPiPStrategy implements IPiPStrategy {
                     link.type = styleSheet.type;
                     link.media = styleSheet.media.toString();
                     link.href = styleSheet.href;
-                    this.pipWindow.document.head.appendChild(link);
+                    pipWin.document.head.appendChild(link);
                 }
             }
         });
     }
 
     private render(state: PiPState) {
+        if (!this.pipWindow) return;
         const doc = this.pipWindow.document;
 
         // Base styles for the body
