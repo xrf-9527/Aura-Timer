@@ -38,6 +38,11 @@ export const TimerWidget: React.FC = () => {
   // Use a ref to hold the wake lock sentinel (using any to bypass strict TS checks for experimental API)
   const wakeLockRef = useRef<any>(null);
 
+  // High-precision timer: store target expiry timestamp to eliminate drift
+  // Uses Date.now() instead of tick counting - industry standard approach (react-timer-hook, pomofocus)
+  // See: https://stackoverflow.com/questions/29971898/how-to-create-an-accurate-timer-in-javascript
+  const expiryTimestampRef = useRef<number | null>(null);
+
   // Widget dimensions (must match actual rendered size)
   const WIDGET_WIDTH = 340;
   const WIDGET_HEIGHT = 200;
@@ -88,16 +93,47 @@ export const TimerWidget: React.FC = () => {
     return () => clearInterval(clockInterval);
   }, []);
 
-  // Timer Tick
+  // High-Precision Timer Tick (Timestamp-based, drift-free)
+  // Based on industry best practices: MDN, react-timer-hook, Stack Overflow consensus
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
+
     if (status === TimerStatus.RUNNING) {
+      // On start/resume: calculate target expiry timestamp
+      if (!expiryTimestampRef.current) {
+        expiryTimestampRef.current = Date.now() + timeLeft * 1000;
+      }
+
+      // Use 100ms interval for smooth updates (10x per second)
+      // More responsive than 1000ms, negligible performance impact
       interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
+        const now = Date.now();
+        const remainingMs = expiryTimestampRef.current! - now;
+        const remainingSeconds = Math.floor(remainingMs / 1000);
+
+        // Update display every 100ms, but only when second changes
+        // This prevents unnecessary re-renders while maintaining precision
+        setTimeLeft((prev) => {
+          // Check if we crossed a second boundary
+          if (remainingSeconds !== prev) {
+            return remainingSeconds;
+          }
+          return prev;
+        });
+
+        // Timer completion: only trigger when crossing zero from positive
+        if (remainingMs <= 0 && remainingMs > -1000) {
+          // Timer expired - can add sound/notification here
+        }
+      }, 100); // 100ms = sub-second precision, smooth visual updates
+    } else {
+      // Clear timestamp when paused/stopped
+      // Important: preserves timeLeft value for resume
+      expiryTimestampRef.current = null;
     }
+
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, timeLeft]); // timeLeft dependency ensures restart sets new target
 
   // Wake Lock Logic (Prevent Sleep)
   const requestWakeLock = useCallback(async () => {
@@ -174,6 +210,8 @@ export const TimerWidget: React.FC = () => {
   const resetTimer = useCallback(() => {
     setStatus(TimerStatus.IDLE);
     setTimeLeft(totalSeconds);
+    // Clear timestamp to ensure fresh start on next play
+    expiryTimestampRef.current = null;
   }, [totalSeconds]);
 
   const toggleTimer = useCallback(() => {
@@ -211,6 +249,8 @@ export const TimerWidget: React.FC = () => {
       const newSeconds = minutes * 60;
       setTotalSeconds(newSeconds);
       setTimeLeft(newSeconds);
+      // Clear timestamp to recalculate on next start
+      expiryTimestampRef.current = null;
     }
     setIsEditing(false);
     setShowAiInput(false);
@@ -228,6 +268,8 @@ export const TimerWidget: React.FC = () => {
       setTotalSeconds(seconds);
       setTimeLeft(seconds);
       setStatus(TimerStatus.IDLE); // Let user start it manually
+      // Clear timestamp for fresh calculation
+      expiryTimestampRef.current = null;
       setIsEditing(false);
       setShowAiInput(false);
       setSmartPrompt("");
