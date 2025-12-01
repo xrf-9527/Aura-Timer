@@ -10,13 +10,16 @@ A minimalist macOS-style floating timer widget with AI-powered time editing and 
 
 ### 💡 Recommended Usage
 
-For the best experience, use with a **Picture-in-Picture** browser extension:
+Aura Timer now has **built-in Picture-in-Picture support**:
 
 1. Visit [timer.xrf.sh](https://timer.xrf.sh)
-2. Enable Picture-in-Picture mode via your browser extension
-3. The timer will float on top of all windows, always visible
+2. Start a timer
+3. Click the **PiP button** under the widget to open an always-on-top mini window  
+   - Chrome / Edge: uses the **Document Picture-in-Picture API**  
+   - Firefox / Safari: uses a **Canvas + Video Picture-in-Picture** fallback
 
-**Popular PiP Extensions:**
+If your browser does not support these APIs, you can still use a **PiP browser extension** as a fallback:
+
 - Chrome/Edge: [Picture-in-Picture Extension](https://chrome.google.com/webstore/detail/picture-in-picture-extens/hkgfoiooedgoejojocmhlaklaeopbecg)
 - Firefox: Built-in PiP (right-click video → "Picture-in-Picture")
 
@@ -27,6 +30,7 @@ For the best experience, use with a **Picture-in-Picture** browser extension:
 - **Smart Backgrounds** - 12 curated HD nature photos rotating every 5 minutes
 - **Keyboard Shortcuts** - `Space` to play/pause, `R` to reset
 - **Fully Draggable** - Position the timer anywhere on screen
+- **Built-in Picture-in-Picture** - One-click floating window with cross-browser strategies (Document PiP + Canvas fallback)
 
 ## Usage
 

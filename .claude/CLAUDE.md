@@ -139,6 +139,11 @@ This creates **clear guardrails** for future development and prevents repeating 
 - `types: ["node"]` - Include Node.js types for process, etc.
 - `typeRoots: ["./node_modules/@types"]` - Explicit type resolution
 
+**Experimental Web APIs typings:**
+- Use `types/web-apis.d.ts` for ambient declarations of experimental browser APIs (Wake Lock, Document Picture-in-Picture).
+- Prefer precise interfaces over `any`, and use `unknown` + `instanceof Error` for error handling.
+- Keep global browser API augmentations in this file instead of scattering `declare global` blocks in implementation files.
+
 ### Component Patterns
 
 - TypeScript interfaces required for all props
@@ -331,6 +336,6 @@ Before committing code, ensure:
 
 ---
 
-**Last Updated**: 2025-11-29
+**Last Updated**: 2025-12-01
 **Project Version**: 1.0.0
 **Maintained By**: Team (via Claude Code Agent)
