@@ -75,6 +75,10 @@ npm run deploy   # Deploy to Cloudflare Workers
 
 Built with strict TypeScript configuration and React 19.2 best practices. See [CLAUDE.md](.claude/CLAUDE.md) for detailed architecture decisions and coding conventions.
 
+**Technical Documentation:**
+- [PiP Architecture](docs/pip-architecture.md) - Cross-browser Picture-in-Picture implementation
+- [Timer Precision](docs/timer-precision.md) - High-precision timestamp-based timer algorithm
+
 ## License
 
 MIT

@@ -201,7 +201,7 @@ setInterval(() => {
 - Resilient to background tab throttling
 - Handles pause/resume correctly (clears timestamp on pause)
 
-**Full documentation**: See `TIMER_PRECISION.md` for algorithm details, testing guide, and references
+**Full documentation**: See [`docs/timer-precision.md`](../docs/timer-precision.md) for algorithm details, testing guide, and references
 
 ### Glassmorphism Design
 
@@ -324,6 +324,10 @@ Before committing code, ensure:
 - React 19: https://react.dev (use WebFetch/WebSearch)
 - TypeScript: https://www.typescriptlang.org/docs (use WebFetch/WebSearch)
 - Vite: https://vitejs.dev/guide (use WebFetch/WebSearch)
+
+**Project Technical Documentation**:
+- [PiP Architecture](../docs/pip-architecture.md) - Hybrid Picture-in-Picture implementation design
+- [Timer Precision](../docs/timer-precision.md) - High-precision timestamp-based timer algorithm
 
 ## Team Notes
 
