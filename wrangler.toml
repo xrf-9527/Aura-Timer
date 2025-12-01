@@ -12,3 +12,8 @@ not_found_handling = "single-page-application"
 [observability]
 enabled = true
 head_sampling_rate = 0.1
+
+[[kv_namespaces]]
+binding = "AURA_LIKES"
+id = "4955b2e672b944f190baf9b7746bb514"
+preview_id = "e1d34c2bb3b44582a2b2b69ea75878ac"

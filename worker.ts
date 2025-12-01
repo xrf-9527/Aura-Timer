@@ -3,6 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 interface Env {
     GEMINI_API_KEY: string;
+    AURA_LIKES: KVNamespace;
     ASSETS: Fetcher;
 }
 
@@ -58,6 +59,35 @@ export default {
                     status: 500,
                     headers: { "Content-Type": "application/json" }
                 });
+            }
+        }
+
+        // API Route for Likes
+        if (url.pathname === "/api/likes") {
+            const LIKES_KEY = "global_likes";
+
+            if (request.method === "GET") {
+                try {
+                    const likes = await env.AURA_LIKES.get(LIKES_KEY);
+                    return new Response(JSON.stringify({ likes: parseInt(likes || "0", 10) }), {
+                        headers: { "Content-Type": "application/json" }
+                    });
+                } catch (error) {
+                    return new Response(JSON.stringify({ error: "Failed to fetch likes" }), { status: 500 });
+                }
+            }
+
+            if (request.method === "POST") {
+                try {
+                    let currentLikes = parseInt(await env.AURA_LIKES.get(LIKES_KEY) || "0", 10);
+                    currentLikes++;
+                    await env.AURA_LIKES.put(LIKES_KEY, currentLikes.toString());
+                    return new Response(JSON.stringify({ likes: currentLikes }), {
+                        headers: { "Content-Type": "application/json" }
+                    });
+                } catch (error) {
+                    return new Response(JSON.stringify({ error: "Failed to update likes" }), { status: 500 });
+                }
             }
         }
 
