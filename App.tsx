@@ -20,7 +20,7 @@ function App() {
           <ul className="list-disc pl-4 space-y-1">
             <li>Drag the widget anywhere.</li>
             <li>Click time to edit (or ask AI).</li>
-            <li>Hover for controls.</li>
+            <li>Hover for controls (PiP available).</li>
             <li>Space: Play/Pause | R: Reset</li>
             <li className="text-white/30 italic">Background changes every 5 min</li>
           </ul>
