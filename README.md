@@ -53,11 +53,24 @@ If your browser does not support these APIs, you can still use a **PiP browser e
 # Install dependencies
 npm install
 
-# Set API key (optional, for AI editing)
-echo "GEMINI_API_KEY=your_key_here" > .env.local
+# Local Development with Worker
+# 1. Create .dev.vars for the API key
+echo "GEMINI_API_KEY=your_key_here" > .dev.vars
 
-# Start development server
+# 2. Start development server
 npm run dev
+```
+
+## Deployment
+
+Deploy to Cloudflare Workers:
+
+```bash
+# 1. Deploy the worker and assets
+npm run deploy
+
+# 2. Set the Gemini API Key (Required)
+npx wrangler secret put GEMINI_API_KEY
 ```
 
 Visit `http://localhost:5173`
