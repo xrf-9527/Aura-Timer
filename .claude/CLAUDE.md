@@ -33,25 +33,9 @@ npm run deploy          # Deploy to Cloudflare Workers
 2. Run `npm install` to install all dependencies
 3. The project uses ESM import maps for browser module loading
 
-## SessionStart Hook (Auto-Initialization)
+## SessionStart Hook
 
-**Purpose**: Automatically install npm dependencies in Claude Code web/remote sessions
-
-**Configuration**: `.claude/settings.json` → runs `scripts/install_deps.sh` on startup
-
-**How it works**:
-- Only runs in web/remote environments (`$CLAUDE_CODE_REMOTE == "true"`)
-- Skips if dependencies already exist (React, Vite, TypeScript)
-- Prefers `npm ci` (~30s) with fallback to `npm install` (~60s)
-- Local development is unaffected (hook skips automatically)
-
-**Key features**:
-- Uses `npm ci` to enforce exact versions from `package-lock.json`
-- Subsequent runs are fast (~1s detection skip)
-- Persists `NODE_ENV=development` to session
-
-**Troubleshooting**: See detailed comments in `scripts/install_deps.sh`
-**Disable**: Empty the `SessionStart` array in `.claude/settings.json`
+Auto-installs dependencies in Claude Code web/remote sessions via `scripts/install_deps.sh`. Uses `npm ci` for exact versions (~30s first run, ~1s subsequent). Local development unaffected. Troubleshoot: see script comments. Disable: empty `SessionStart` in `.claude/settings.json`.
 
 ## Working with Claude Code Agent
 
@@ -59,67 +43,23 @@ npm run deploy          # Deploy to Cloudflare Workers
 
 ## Custom Slash Commands
 
-This project includes custom slash commands for common workflows. All commands are in `.claude/commands/`.
-
 ### Available Commands
 
-| Command | Purpose | Usage |
-|---------|---------|-------|
-| `/tighten-docs` | Optimize CLAUDE.md to reduce token usage while preserving essential information | `/tighten-docs` |
-| `/review-best-practices` | Review code against project best practices defined in CLAUDE.md | `/review-best-practices [file-path]` |
-| `/check-build` | Run TypeScript and Vite build checks, analyze and fix any errors | `/check-build` |
-| `/update-memory` | Update CLAUDE.md with new lessons learned or guidelines | `/update-memory <section> <guideline>` |
+| Command | Purpose |
+|---------|---------|
+| `/tighten-docs` | Optimize CLAUDE.md token usage |
+| `/review-best-practices [file]` | Check code against project best practices |
+| `/check-build` | Run TypeScript/Vite build and fix errors |
+| `/update-memory <section> <guideline>` | Capture new guidelines |
 
-### Workflow Pattern
+**Workflow**: Spot issue → `/update-memory` → `/tighten-docs` → `/review-best-practices`
 
-**Best practice workflow** (inspired by high-performing teams):
+**Note**: Commands are self-documenting; run them to see detailed instructions.
 
-1. **Spot an issue**: Find code that could be better or a repeated mistake
-2. **Update memory**: Use `/update-memory` to add guideline to CLAUDE.md
-3. **Tighten rules**: Run `/tighten-docs` to ensure documentation stays concise
-4. **Review code**: Use `/review-best-practices` to check compliance
+## Build & Test
 
-This creates **clear guardrails** for future development and prevents repeating the same issues.
-
-### Command Details
-
-**`/tighten-docs`** - Token Optimizer
-- Analyzes CLAUDE.md for redundancy and verbosity
-- Follows official "navigation hub" philosophy
-- Proposes optimizations with before/after examples
-- Asks for approval before making changes
-
-**`/review-best-practices [file-path]`** - Code Quality Checker
-- Reviews code against React 19.2 best practices
-- Flags `useCallback` misuse, accessibility issues, type errors
-- Provides compliance score and actionable fixes
-- Can review specific file or recent git changes
-
-**`/check-build`** - Build Validator
-- Runs TypeScript type check and Vite build
-- Analyzes errors with context-specific explanations
-- Proposes fixes for common Aura Timer build issues
-- Verifies bundle size and build output
-
-**`/update-memory <section> <guideline>`** - Knowledge Capture
-- Adds new guidelines to CLAUDE.md based on discoveries
-- Validates for specificity, conciseness, and uniqueness
-- Formats according to section standards
-- Prevents duplicate or outdated information
-
-## Build & Test Procedures
-
-### Before Committing Code
-1. **Always run build**: `npm run build`
-2. **Fix all TypeScript errors**: The build uses strict mode
-3. **Check for unused imports**: TypeScript will flag them as errors
-4. **Test in browser**: Run `npm run dev` and manually verify functionality
-
-### Build Configuration
-- TypeScript strict mode is enabled
-- `noUnusedLocals` and `noUnusedParameters` are enforced
-- Build output: `dist/` directory (excluded from git)
-- Vite bundle analyzer shows ~217KB main bundle (68KB gzipped)
+**Before commit**: `npm run build` (strict mode, fixes unused imports) → manual test via `npm run dev`
+**Output**: `dist/` (~217KB, 68KB gzipped)
 
 ## Coding Conventions
 
@@ -128,7 +68,7 @@ This creates **clear guardrails** for future development and prevents repeating 
 - **DO NOT use `useCallback` by default** - Move functions inside `useEffect` when only used there ([official guidance](https://react.dev/reference/react/useCallback))
 - **DO** use primitive dependencies in `useEffect` dependency arrays, not function references
 - **DO** use named exports for components, default export only for App.tsx
-- **PREFER `matchMedia` API over `resize` events** - For responsive breakpoints, use `window.matchMedia('(max-width: 768px)').addEventListener('change', handler)` instead of resize events. Only fires when crossing thresholds, not on every pixel change. Include `addListener` fallback for Safari < 14. (See: useDraggable.ts:114-127, TimerWidget.tsx:54-79)
+- **PREFER `matchMedia` API over `resize` events** - For responsive breakpoints, use `window.matchMedia('(max-width: 768px)').addEventListener('change', handler)` instead of resize events. Only fires when crossing thresholds, not on every pixel change. Include `addListener` fallback for Safari < 14. (See: `useDraggable.ts`, `TimerWidget.tsx`)
 
 ### TypeScript Configuration
 
@@ -177,52 +117,18 @@ This creates **clear guardrails** for future development and prevents repeating 
 - Preloads next image to prevent loading flashes
 - **Pattern**: Functions inside `useEffect` (React 19.2 best practice) with primitive dependencies only
 
-### High-Precision Timer System
+### High-Precision Timer
 
-**Problem Solved**: Traditional `setInterval`-based timers accumulate drift over time (10-30s error per hour)
-
-**Solution** (`components/TimerWidget.tsx:96-136`):
-- **Timestamp-based calculation**: Records target expiry time (`Date.now() + duration`), recalculates remaining time each tick
-- **Zero cumulative error**: Each update is independent, errors don't compound
-- **100ms tick interval**: Smooth visual updates (10Hz) while only re-rendering when seconds change
-- **Industry standard**: Based on react-timer-hook, MDN guidance, Stack Overflow consensus
-
-**Key Implementation**:
-```typescript
-expiryTimestampRef.current = Date.now() + timeLeft * 1000;
-setInterval(() => {
-  const remaining = Math.floor((expiryTimestampRef.current - Date.now()) / 1000);
-  setTimeLeft(prev => remaining !== prev ? remaining : prev); // Only update on second change
-}, 100);
-```
-
-**Benefits**:
-- Accurate over hours (±1s precision vs ±30s drift with tick counting)
-- Resilient to background tab throttling
-- Handles pause/resume correctly (clears timestamp on pause)
-
-**Full documentation**: See [`docs/timer-precision.md`](../docs/timer-precision.md) for algorithm details, testing guide, and references
+Timestamp-based calculation (not tick counting) eliminates cumulative drift. 100ms intervals, ±1s precision over hours. Implementation: `TimerWidget.tsx` (timer tick logic). Full details: [`docs/timer-precision.md`](../docs/timer-precision.md)
 
 ### Glassmorphism Design
 
 - macOS-style backdrop blur with semi-transparent backgrounds, subtle shadows
 - Pointer events disabled on background layer to allow widget dragging
 
-### Hybrid PiP Architecture
+### PiP System
 
-**Problem Solved**: Cross-browser Picture-in-Picture support for arbitrary content (Timer).
-
-**Solution** (`services/pip/`):
-- **Strategy Pattern**: `PiPManager` selects best strategy based on browser capabilities.
-- **Document PiP (Chrome/Edge)**: Uses `documentPictureInPicture` API for interactive window. Copies styles from main window.
-- **Canvas Stream (Firefox/Safari)**: Uses `canvas.captureStream()` + hidden `<video>` element. Renders timer to canvas at 10 FPS (throttled) to minimize CPU usage.
-- **Background Reliability**: Plays silent audio loop to prevent browser from discarding the background tab.
-
-**Key Files**:
-- `services/pip/PiPManager.ts`: Entry point and strategy selector.
-- `services/pip/strategies/DocumentPiPStrategy.ts`: Interactive PiP implementation.
-- `services/pip/strategies/CanvasStreamStrategy.ts`: Video-based fallback implementation.
-- `hooks/usePiP.ts`: React hook for integration.
+Strategy pattern for cross-browser support: Document PiP (Chrome/Edge) or Canvas Stream (Firefox/Safari). See [`docs/pip-architecture.md`](../docs/pip-architecture.md)
 
 ## Known Issues & Considerations
 
@@ -240,29 +146,9 @@ setInterval(() => {
 - Background images from Unsplash CDN (pre-sized 1920px)
 - `setInterval` cleanup prevents memory leaks
 
-## Dependencies & Versions
+## Dependencies
 
-**Production Dependencies:**
-```json
-{
-  "react": "^19.2.0",
-  "react-dom": "^19.2.0",
-  "@google/genai": "^1.30.0"
-}
-```
-
-**Dev Dependencies:**
-```json
-{
-  "typescript": "^5.3.0",
-  "vite": "^7.2.4",
-  "@vitejs/plugin-react": "^5.1.1",
-  "@types/react": "^19.2.7",
-  "@types/react-dom": "^19.2.3",
-  "@types/node": "^24.10.1",
-  "wrangler": "^4.51.0"
-}
-```
+See `package.json` for current versions. Key: React 19.2, TypeScript 5.3, Vite 7.2, Gemini AI.
 
 ## Deployment
 
@@ -271,23 +157,7 @@ setInterval(() => {
 
 ## Git Workflow
 
-**Branch Naming Convention:**
-- Feature branches: `claude/<feature-description>-<session-id>`
-- Example: `claude/rotating-background-images-01E4U4YBpojJ7DGtUG4jYmFJ`
-
-**Commit Message Format:**
-```
-<type>: <description>
-
-<body with details>
-
-Types: feat, fix, refactor, chore, docs, style, test
-```
-
-**Before Pushing:**
-1. Always test build: `npm run build`
-2. Push to feature branch with session ID
-3. Use `git push -u origin <branch-name>` for new branches
+**Branches**: `claude/<feature>-<session-id>` | **Commits**: `<type>: <description>` (feat, fix, refactor, chore, docs) | **Before push**: `npm run build`
 
 ## Frequently Used Commands
 
@@ -304,18 +174,6 @@ npm run deploy          # Deploy to Cloudflare Workers
 npm install             # Reinstall dependencies if types are missing
 npx tsc --noEmit        # Check TypeScript errors without building
 ```
-
-## Best Practices Checklist
-
-Before committing code, ensure:
-- [ ] `npm run build` succeeds with zero errors
-- [ ] No unused imports or variables (TypeScript will error)
-- [ ] Functions are NOT wrapped in unnecessary `useCallback`
-- [ ] All `useEffect` hooks have proper dependency arrays
-- [ ] Components have TypeScript interfaces for props
-- [ ] Accessibility attributes are present where needed
-- [ ] Code follows React 19.2 official guidelines
-- [ ] **When uncertain, verified against official docs** (use `claude-code-guide` for Claude Code, WebFetch/WebSearch for others)
 
 ## Resources
 
