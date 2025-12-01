@@ -90,7 +90,7 @@ echo "🔍 验证依赖完整性..."
 MISSING_DEPS=0
 
 # 检查生产依赖
-for pkg in react react-dom @google/generative-ai; do
+for pkg in react react-dom @google/genai motion; do
   if [ ! -d "node_modules/$(echo $pkg | tr '/' '/')" ]; then
     echo "   ❌ 缺少：$pkg"
     MISSING_DEPS=$((MISSING_DEPS + 1))
