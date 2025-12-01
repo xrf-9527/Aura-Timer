@@ -315,20 +315,20 @@ Before committing code, ensure:
 - [ ] Components have TypeScript interfaces for props
 - [ ] Accessibility attributes are present where needed
 - [ ] Code follows React 19.2 official guidelines
-- [ ] **When uncertain, used `claude-code-guide` agent to verify against official docs**
+- [ ] **When uncertain, verified against official docs** (use `claude-code-guide` for Claude Code, WebFetch/WebSearch for others)
 
 ## Resources
 
-**Official Documentation** (query via `claude-code-guide` agent):
-- Claude Code: https://code.claude.com/docs
-- React 19: https://react.dev
-- TypeScript: https://www.typescriptlang.org/docs
-- Vite: https://vitejs.dev/guide
+**Official Documentation**:
+- Claude Code: https://code.claude.com/docs (query via `claude-code-guide` agent)
+- React 19: https://react.dev (use WebFetch/WebSearch)
+- TypeScript: https://www.typescriptlang.org/docs (use WebFetch/WebSearch)
+- Vite: https://vitejs.dev/guide (use WebFetch/WebSearch)
 
 ## Team Notes
 
 - This project prioritizes **code simplicity over premature optimization**
-- **ALWAYS verify against official documentation** using `claude-code-guide` agent - don't rely on assumptions
+- **ALWAYS verify against official documentation** - don't rely on assumptions. Use `claude-code-guide` agent for Claude Code docs, WebFetch/WebSearch for other tech stacks
 - Follow React official documentation for best practices, not blog posts or outdated tutorials
 - When in doubt about a pattern or convention, query the official docs first
 - Avoid over-engineering; keep solutions focused and minimal
