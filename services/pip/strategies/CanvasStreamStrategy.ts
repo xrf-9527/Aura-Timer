@@ -121,13 +121,18 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         this.ctx.textBaseline = 'middle';
         this.ctx.font = `700 ${fontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
 
-        // 4. Determine Color
+        // 4. Determine Color (keep digits in a soft, high-contrast gray)
+        this.ctx.fillStyle = '#e4e4e7'; // Zinc-200
+
+        // Apply a soft colored glow for warning / overtime while keeping digits readable
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowColor = 'transparent';
         if (state.isOvertime) {
-            this.ctx.fillStyle = '#fcd34d'; // Amber-300
-        } else if (state.isWarning) {
-            this.ctx.fillStyle = '#fb7185'; // Rose-400
-        } else {
-            this.ctx.fillStyle = '#e4e4e7'; // Zinc-200
+            this.ctx.shadowColor = 'rgba(251, 191, 36, 0.7)';
+            this.ctx.shadowBlur = fontSize * 0.18;
+        } else if (state.isWarning && state.status === TimerStatus.RUNNING) {
+            this.ctx.shadowColor = 'rgba(251, 113, 133, 0.6)';
+            this.ctx.shadowBlur = fontSize * 0.16;
         }
 
         // 5. Build time parts and draw with breathing colons
@@ -144,7 +149,7 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         // Calculate colon opacity for breathing effect
         const isRunning = state.status === TimerStatus.RUNNING;
         const absSeconds = Math.abs(state.timeLeft);
-        const colonOpacity = (isRunning && absSeconds % 2 === 1) ? 0.4 : 1.0;
+        const colonOpacity = (isRunning && absSeconds % 2 === 1) ? 0.55 : 1.0;
 
         // 6. Pre-measure all parts for accurate centering
         // Avoids cumulative error from multiple measureText calls
@@ -190,8 +195,10 @@ export class CanvasStreamStrategy implements IPiPStrategy {
             x += part.width;  // Use cached measurement
         });
 
-        // 9. Reset alpha
+        // 9. Reset alpha and shadow
         this.ctx.globalAlpha = 1.0;
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowColor = 'transparent';
 
         // 10. Draw status indicator for paused state
         if (state.status === TimerStatus.PAUSED) {

@@ -176,15 +176,7 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         // Calculate colon opacity based on running state and current second
         const isRunning = state.status === TimerStatus.RUNNING;
         const absSeconds = Math.abs(state.timeLeft);
-        const colonOpacity = isRunning && absSeconds % 2 === 1 ? '0.4' : '1';
-
-        // Determine color
-        let colorClass = 'text-zinc-200';
-        if (state.isOvertime) {
-            colorClass = 'text-amber-300';
-        } else if (state.isWarning) {
-            colorClass = 'text-rose-400';
-        }
+        const colonOpacity = isRunning && absSeconds % 2 === 1 ? '0.55' : '1';
 
         // Check if we need to rebuild DOM (format changed or first render)
         const needsRebuild = showHours !== this.lastShowHours || this.timePartSpans.length === 0;
@@ -221,9 +213,18 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             }
         }
 
-        // Update color class
-        this.timeDisplay.className = `font-mono font-bold tracking-tight drop-shadow-sm ${colorClass}`;
+        // Update color class (keep digits in a soft, high-contrast gray)
+        this.timeDisplay.className = 'font-mono font-bold tracking-tight drop-shadow-sm text-zinc-200';
         this.timeDisplay.style.lineHeight = '1';
+
+        // Apply a soft colored glow for warning / overtime while keeping digits easy on the eyes
+        if (state.isOvertime) {
+            this.timeDisplay.style.textShadow = '0 0 18px rgba(251, 191, 36, 0.7)';
+        } else if (state.isWarning && isRunning) {
+            this.timeDisplay.style.textShadow = '0 0 16px rgba(251, 113, 133, 0.6)';
+        } else {
+            this.timeDisplay.style.textShadow = '';
+        }
 
         // Font size will be set by handleResize
     }
