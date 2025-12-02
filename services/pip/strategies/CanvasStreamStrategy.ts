@@ -23,6 +23,12 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         this.canvas.height = 340;
         this.ctx = this.canvas.getContext('2d', { alpha: false }); // Optimize for performance
 
+        // Enable high-quality text rendering
+        if (this.ctx) {
+            this.ctx.imageSmoothingEnabled = true;
+            this.ctx.imageSmoothingQuality = 'high';
+        }
+
         // 2. Create Video
         this.video = document.createElement('video');
         this.video.muted = true;
@@ -98,7 +104,8 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         // 2. Text Configuration
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.font = 'bold 120px monospace'; // Increased for better PiP readability
+        // Use high-quality font stack matching Document PiP (700 = bold weight)
+        this.ctx.font = '700 120px ui-monospace, Menlo, Monaco, Consolas, monospace';
 
         // 3. Determine Color
         if (state.isOvertime) {
@@ -128,7 +135,7 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         // Draw small indicator for paused state
         if (state.status === TimerStatus.PAUSED) {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            this.ctx.font = '20px sans-serif';
+            this.ctx.font = '600 20px ui-monospace, Menlo, Monaco, Consolas, monospace';
             this.ctx.fillText('PAUSED', width / 2, height / 2 + 60);
         }
     }
