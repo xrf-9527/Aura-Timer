@@ -159,8 +159,8 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             colorClass = 'text-rose-400';
         }
 
-        // Re-apply classes
-        this.timeDisplay.className = `text-6xl font-mono tracking-tighter drop-shadow-sm ${colorClass}`;
+        // Re-apply classes (text-8xl = 96px for optimal PiP readability)
+        this.timeDisplay.className = `text-8xl font-mono tracking-tighter drop-shadow-sm ${colorClass}`;
         this.timeDisplay.textContent = text;
     }
 

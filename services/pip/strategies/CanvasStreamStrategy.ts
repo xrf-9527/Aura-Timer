@@ -98,7 +98,7 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         // 2. Text Configuration
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.font = 'bold 80px monospace'; // Monospace for numbers
+        this.ctx.font = 'bold 120px monospace'; // Increased for better PiP readability
 
         // 3. Determine Color
         if (state.isOvertime) {
