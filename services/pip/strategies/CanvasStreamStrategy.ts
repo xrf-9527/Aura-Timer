@@ -153,35 +153,48 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         const absSeconds = Math.abs(state.timeLeft);
         const colonOpacity = (isRunning && absSeconds % 2 === 1) ? 0.4 : 1.0;
 
-        // 6. Calculate total width for centering
-        let fullText = timeParts.join(':');
-        if (state.isOvertime) {
-            fullText = `-${fullText}`;
+        // 6. Pre-measure all parts for accurate centering
+        // Avoids cumulative error from multiple measureText calls
+        interface MeasuredPart {
+            text: string;
+            width: number;
+            isColon: boolean;
+            opacity: number;
         }
-        const totalWidth = this.ctx.measureText(fullText).width;
+
+        const measuredParts: MeasuredPart[] = [];
+        let totalWidth = 0;
+
+        // Measure negative sign if needed
+        if (state.isOvertime) {
+            const negWidth = this.ctx.measureText('-').width;
+            measuredParts.push({ text: '-', width: negWidth, isColon: false, opacity: 1.0 });
+            totalWidth += negWidth;
+        }
+
+        // Measure time parts and colons
+        timeParts.forEach((part, index) => {
+            const partWidth = this.ctx!.measureText(part).width;
+            measuredParts.push({ text: part, width: partWidth, isColon: false, opacity: 1.0 });
+            totalWidth += partWidth;
+
+            // Add colon measurement (except after last part)
+            if (index < timeParts.length - 1) {
+                const colonWidth = this.ctx!.measureText(':').width;
+                measuredParts.push({ text: ':', width: colonWidth, isColon: true, opacity: colonOpacity });
+                totalWidth += colonWidth;
+            }
+        });
+
+        // 7. Calculate starting x position for perfect centering
         let x = (width - totalWidth) / 2;
         const y = height / 2;
 
-        // 7. Draw negative sign if overtime
-        if (state.isOvertime) {
-            this.ctx.globalAlpha = 1.0;
-            this.ctx.fillText('-', x, y);
-            x += this.ctx.measureText('-').width;
-        }
-
-        // 8. Draw time parts with breathing colons
-        timeParts.forEach((part, index) => {
-            // Draw number part
-            this.ctx!.globalAlpha = 1.0;
-            this.ctx!.fillText(part, x, y);
-            x += this.ctx!.measureText(part).width;
-
-            // Draw colon with breathing effect (except after last part)
-            if (index < timeParts.length - 1) {
-                this.ctx!.globalAlpha = colonOpacity;
-                this.ctx!.fillText(':', x, y);
-                x += this.ctx!.measureText(':').width;
-            }
+        // 8. Draw all parts using pre-measured widths
+        measuredParts.forEach((part) => {
+            this.ctx!.globalAlpha = part.opacity;
+            this.ctx!.fillText(part.text, x, y);
+            x += part.width;  // Use cached measurement
         });
 
         // 9. Reset alpha

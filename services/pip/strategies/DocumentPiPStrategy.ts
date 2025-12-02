@@ -19,6 +19,12 @@ export class DocumentPiPStrategy implements IPiPStrategy {
     private toggleBtn: HTMLElement | null = null;
     private resetBtn: HTMLElement | null = null;
 
+    // Cached time display elements for smooth animation
+    private timePartSpans: HTMLElement[] = [];
+    private colonSpans: HTMLElement[] = [];
+    private negativeSignSpan: HTMLElement | null = null;
+    private lastShowHours: boolean = false;
+
     async open(initialState: PiPState, callbacks?: PiPCallbacks): Promise<void> {
         this.callbacks = callbacks || null;
 
@@ -178,23 +184,74 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             colorClass = 'text-rose-400';
         }
 
-        // Clear and rebuild display with segmented structure
-        this.timeDisplay.innerHTML = '';
+        // Check if we need to rebuild DOM (format changed or first render)
+        const needsRebuild = showHours !== this.lastShowHours || this.timePartSpans.length === 0;
+
+        if (needsRebuild) {
+            // Full rebuild when format changes
+            this.buildTimeDisplayStructure(timeParts, colonOpacity, state.isOvertime);
+            this.lastShowHours = showHours;
+        } else {
+            // Incremental update: only change text content and colon opacity
+            // This preserves CSS transitions for smooth breathing animation
+            timeParts.forEach((part, index) => {
+                if (this.timePartSpans[index]) {
+                    this.timePartSpans[index].textContent = part;
+                }
+            });
+
+            // Update colon opacity (CSS transition will animate smoothly)
+            this.colonSpans.forEach((colon) => {
+                colon.style.opacity = colonOpacity;
+            });
+
+            // Update negative sign visibility
+            if (state.isOvertime) {
+                if (!this.negativeSignSpan) {
+                    this.negativeSignSpan = document.createElement('span');
+                    this.negativeSignSpan.textContent = '-';
+                    this.negativeSignSpan.style.marginRight = '0.1em';
+                    this.timeDisplay.insertBefore(this.negativeSignSpan, this.timeDisplay.firstChild);
+                }
+            } else if (this.negativeSignSpan) {
+                this.negativeSignSpan.remove();
+                this.negativeSignSpan = null;
+            }
+        }
+
+        // Update color class
         this.timeDisplay.className = `font-mono font-bold tracking-tight drop-shadow-sm ${colorClass}`;
         this.timeDisplay.style.lineHeight = '1';
 
+        // Font size will be set by handleResize
+    }
+
+    /**
+     * Build the DOM structure for time display and cache element references
+     * Only called when format changes or on first render
+     */
+    private buildTimeDisplayStructure(timeParts: string[], colonOpacity: string, isOvertime: boolean) {
+        if (!this.timeDisplay) return;
+
+        // Clear existing content and caches
+        this.timeDisplay.innerHTML = '';
+        this.timePartSpans = [];
+        this.colonSpans = [];
+        this.negativeSignSpan = null;
+
         // Add negative sign if overtime
-        if (state.isOvertime) {
-            const negSign = document.createElement('span');
-            negSign.textContent = '-';
-            negSign.style.marginRight = '0.1em';
-            this.timeDisplay.appendChild(negSign);
+        if (isOvertime) {
+            this.negativeSignSpan = document.createElement('span');
+            this.negativeSignSpan.textContent = '-';
+            this.negativeSignSpan.style.marginRight = '0.1em';
+            this.timeDisplay.appendChild(this.negativeSignSpan);
         }
 
-        // Render time parts with breathing colons
+        // Create and cache time part spans and colons
         timeParts.forEach((part, index) => {
             const span = document.createElement('span');
             span.textContent = part;
+            this.timePartSpans.push(span);
             this.timeDisplay!.appendChild(span);
 
             // Add colon after each part except the last
@@ -205,11 +262,10 @@ export class DocumentPiPStrategy implements IPiPStrategy {
                 colon.style.opacity = colonOpacity;
                 colon.style.transition = 'opacity 0.5s ease-in-out';
                 colon.style.margin = '0 0.05em';
+                this.colonSpans.push(colon);
                 this.timeDisplay!.appendChild(colon);
             }
         });
-
-        // Font size will be set by handleResize
     }
 
     private getPlayPauseIcon(status: TimerStatus): string {
@@ -327,6 +383,12 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.container = null;
         this.toggleBtn = null;
         this.resetBtn = null;
+
+        // Clear cached time display elements
+        this.timePartSpans = [];
+        this.colonSpans = [];
+        this.negativeSignSpan = null;
+        this.lastShowHours = false;
     }
 
     close(): void {
