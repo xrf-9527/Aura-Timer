@@ -217,11 +217,11 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.timeDisplay.className = 'font-mono font-bold tracking-tight drop-shadow-sm text-zinc-200';
         this.timeDisplay.style.lineHeight = '1';
 
-        // Apply a soft colored glow for warning / overtime while keeping digits easy on the eyes
+        // Apply a very soft colored glow for warning / overtime while keeping digits easy on the eyes
         if (state.isOvertime) {
-            this.timeDisplay.style.textShadow = '0 0 18px rgba(251, 191, 36, 0.7)';
+            this.timeDisplay.style.textShadow = '0 0 12px rgba(251, 191, 36, 0.28)';
         } else if (state.isWarning && isRunning) {
-            this.timeDisplay.style.textShadow = '0 0 16px rgba(251, 113, 133, 0.6)';
+            this.timeDisplay.style.textShadow = '0 0 10px rgba(251, 113, 133, 0.22)';
         } else {
             this.timeDisplay.style.textShadow = '';
         }

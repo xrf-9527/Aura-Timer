@@ -128,11 +128,11 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         this.ctx.shadowBlur = 0;
         this.ctx.shadowColor = 'transparent';
         if (state.isOvertime) {
-            this.ctx.shadowColor = 'rgba(251, 191, 36, 0.7)';
-            this.ctx.shadowBlur = fontSize * 0.18;
+            this.ctx.shadowColor = 'rgba(251, 191, 36, 0.28)';
+            this.ctx.shadowBlur = fontSize * 0.1;
         } else if (state.isWarning && state.status === TimerStatus.RUNNING) {
-            this.ctx.shadowColor = 'rgba(251, 113, 133, 0.6)';
-            this.ctx.shadowBlur = fontSize * 0.16;
+            this.ctx.shadowColor = 'rgba(251, 113, 133, 0.22)';
+            this.ctx.shadowBlur = fontSize * 0.08;
         }
 
         // 5. Build time parts and draw with breathing colons
