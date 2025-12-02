@@ -98,7 +98,7 @@ for pkg in react react-dom @google/genai motion; do
 done
 
 # 检查开发依赖
-for pkg in vite typescript @vitejs/plugin-react; do
+for pkg in vite typescript @vitejs/plugin-react eslint babel-plugin-react-compiler; do
   if [ ! -d "node_modules/$(echo $pkg | tr '/' '/')" ]; then
     echo "   ❌ 缺少：$pkg"
     MISSING_DEPS=$((MISSING_DEPS + 1))

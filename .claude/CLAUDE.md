@@ -33,9 +33,45 @@ npm run deploy          # Deploy to Cloudflare Workers
 2. Run `npm install` to install all dependencies
 3. The project uses ESM import maps for browser module loading
 
-## SessionStart Hook
+## Hooks Configuration
 
-Auto-installs dependencies in Claude Code web/remote sessions via `scripts/install_deps.sh`. Uses `npm ci` for exact versions (~30s first run, ~1s subsequent). Local development unaffected. Troubleshoot: see script comments. Disable: empty `SessionStart` in `.claude/settings.json`.
+### SessionStart Hook
+
+Auto-installs dependencies in Claude Code web/remote sessions via `scripts/install_deps.sh`. Uses `npm ci` for exact versions (~12s first run, ~1s subsequent). Local development unaffected.
+
+**Key Features:**
+- ✅ Checks production deps: react, react-dom, @google/genai, motion
+- ✅ Checks dev deps: vite, typescript, @vitejs/plugin-react, eslint, babel-plugin-react-compiler
+- ✅ Persistent environment variables: `NODE_ENV=development`, `npm_config_loglevel=error`
+- ✅ Graceful fallback: `npm ci` → `npm install`
+
+**Location:** `scripts/install_deps.sh` | **Timeout:** 120s
+
+### PostToolUse Hook
+
+Auto-fixes ESLint issues after Write/Edit operations via `.claude/hooks/post-write-lint.sh`. Runs `npm run lint:fix` to maintain code quality automatically.
+
+**Key Features:**
+- ✅ Triggers on: Write or Edit tool execution
+- ✅ Web-only execution (skips local development)
+- ✅ Non-blocking (exit 0, reports results)
+- ✅ Shows fix summary or remaining errors
+
+**Location:** `.claude/hooks/post-write-lint.sh` | **Timeout:** 30s
+
+### SessionEnd Hook
+
+Displays git status and uncommitted changes when session ends via `.claude/hooks/session-end-git-check.sh`. Helps prevent accidentally leaving uncommitted work.
+
+**Key Features:**
+- ✅ Runs on session exit (non-interactive)
+- ✅ Shows git status summary with statistics
+- ✅ File counts: modified, added, deleted, untracked
+- ✅ Helpful git command reminders
+
+**Location:** `.claude/hooks/session-end-git-check.sh`
+
+**Disable Hooks:** Edit `.claude/settings.json` to remove or empty the hook array. Troubleshoot: see script comments.
 
 ## Working with Claude Code Agent
 
@@ -242,6 +278,6 @@ npx tsc --noEmit        # Check TypeScript errors without building
 
 ---
 
-**Last Updated**: 2025-12-02 (React Compiler Integration)
+**Last Updated**: 2025-12-02 (Hooks Integration - SessionStart, PostToolUse, SessionEnd)
 **Project Version**: 1.0.0
 **Maintained By**: Team (via Claude Code Agent)
