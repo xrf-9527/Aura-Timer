@@ -173,7 +173,12 @@ Timestamp-based calculation (not tick counting) eliminates cumulative drift. 100
 
 ### PiP System
 
-Strategy pattern for cross-browser support: Document PiP (Chrome/Edge) or Canvas Stream (Firefox/Safari). See [`docs/pip-architecture.md`](../docs/pip-architecture.md)
+Strategy pattern for cross-browser support:
+- **Document PiP** via `window.documentPictureInPicture` (Chrome/Edge)
+- **Canvas Stream + Element PiP** via `HTMLVideoElement.requestPictureInPicture`（任何在运行时检测到支持元素 PiP API 的浏览器）
+- **Firefox Fallback:** 复用同一套 Canvas 绘制逻辑，在主界面中渲染为可见 `<video>`，由 Firefox 内建 PiP 按钮开启画中画（不调用 Web PiP JS API）
+
+See [`docs/pip-architecture.md`](../docs/pip-architecture.md) for full design.
 
 ### React Compiler Integration
 

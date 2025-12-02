@@ -3,6 +3,8 @@ import { TimerStatus } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { getDurationFromQuery } from '../services/geminiService';
 import { usePiP } from '../hooks/usePiP';
+import type { PiPState } from '../services/pip/strategies/IPiPStrategy';
+import { drawTimerOnCanvas } from '../services/pip/drawTimerCanvas.ts';
 
 // Icons
 const PlayIcon = () => (
@@ -24,6 +26,74 @@ const PiPIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" opacity="0.1"></rect><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><rect x="12" y="12" width="7" height="4" rx="1" fill="currentColor" fillOpacity="0.2"></rect></svg>
 );
 
+interface FirefoxTimerVideoProps {
+  state: PiPState;
+}
+
+const FirefoxTimerVideo: React.FC<FirefoxTimerVideoProps> = ({ state }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+
+  // Initialize canvas -> video stream once
+  useEffect(() => {
+    if (typeof document === 'undefined' || !videoRef.current) return;
+
+    const canvas = document.createElement('canvas');
+    // Match the visual width/height of the timer widget content
+    canvas.width = 340;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
+
+    canvasRef.current = canvas;
+    ctxRef.current = ctx;
+
+    const stream = (canvas as HTMLCanvasElement & { captureStream(frameRate?: number): MediaStream }).captureStream(10);
+
+    const videoEl = videoRef.current;
+    videoEl.muted = true;
+    videoEl.autoplay = true;
+    videoEl.playsInline = true;
+    // Attach the canvas stream so Firefox can offer its built‑in PiP button on hover
+    videoEl.srcObject = stream;
+    videoEl.play().catch(() => { /* Soft‑fail: display stays but PiP won't work */ });
+
+    return () => {
+      const v = videoRef.current;
+      if (v && v.srcObject) {
+        const mediaStream = v.srcObject as MediaStream;
+        mediaStream.getTracks().forEach(track => track.stop());
+        v.srcObject = null;
+      }
+      canvasRef.current = null;
+      ctxRef.current = null;
+    };
+  }, []);
+
+  // Draw current timer state into canvas whenever it changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if (!canvas || !ctx) return;
+    drawTimerOnCanvas(canvas, ctx, state);
+  }, [state]);
+
+  return (
+    <video
+      ref={videoRef}
+      // 显式显示 video，以便 Firefox 在 hover 时展示内置 PiP 按钮
+      style={{
+        width: '100%',
+        height: 'auto',
+        maxWidth: '100%',
+        borderRadius: 12,
+        backgroundColor: '#1e1e23',
+      }}
+    />
+  );
+};
+
 const DEFAULT_TIME = 15 * 60; // 15 minutes
 
 export const TimerWidget: React.FC = () => {
@@ -38,6 +108,7 @@ export const TimerWidget: React.FC = () => {
   const [showAiInput, setShowAiInput] = useState(false);
   const [now, setNow] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
+  const [isFirefox, setIsFirefox] = useState(false);
 
   // Use a ref to hold the wake lock sentinel
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
@@ -87,6 +158,12 @@ export const TimerWidget: React.FC = () => {
       mediaQuery.addListener(checkMobile);
       return () => mediaQuery.removeListener(checkMobile);
     }
+  }, []);
+
+  // Detect Firefox for native video PiP fallback
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    setIsFirefox(/firefox/i.test(navigator.userAgent));
   }, []);
 
   // Clock Tick (Current Time)
@@ -340,7 +417,7 @@ export const TimerWidget: React.FC = () => {
     onClose: () => { }
   };
 
-  const { togglePiP, isPiPActive } = usePiP(
+  const { togglePiP, isPiPActive, isPiPSupported } = usePiP(
     {
       timeLeft,
       totalSeconds,
@@ -396,26 +473,41 @@ export const TimerWidget: React.FC = () => {
           <div
             className="relative group cursor-pointer mt-2" // Added mt-2 to offset slightly for header
             onClick={handleTimeClick}
-            title="Click to edit duration"
+            title={isFirefox ? undefined : 'Click to edit duration'}
           >
             <div
               className={`flex items-center justify-center ${fontSizeClass} font-mono tracking-tighter transition-colors duration-300 ${textColorClass}`}
             >
-              {/* Negative sign for overtime - Aligned with colons */}
-              {isOvertime && (
-                <span className={`mr-2 relative ${verticalOffsetClass}`}>-</span>
-              )}
-
-              {showHours && (
+              {isFirefox ? (
+                <FirefoxTimerVideo
+                  state={{
+                    timeLeft,
+                    totalSeconds,
+                    status,
+                    timeString: timeDisplay,
+                    isOvertime,
+                    isWarning,
+                  }}
+                />
+              ) : (
                 <>
-                  <span>{timeDisplay.hours}</span>
+                  {/* Negative sign for overtime - Aligned with colons */}
+                  {isOvertime && (
+                    <span className={`mr-2 relative ${verticalOffsetClass}`}>-</span>
+                  )}
+
+                  {showHours && (
+                    <>
+                      <span>{timeDisplay.hours}</span>
+                      <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
+                    </>
+                  )}
+                  <span>{timeDisplay.minutes}</span>
+                  {/* Colon with synced breathing effect and vertical adjustment */}
                   <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
+                  <span>{timeDisplay.seconds}</span>
                 </>
               )}
-              <span>{timeDisplay.minutes}</span>
-              {/* Colon with synced breathing effect and vertical adjustment */}
-              <span className={`mx-1 relative ${verticalOffsetClass} transition-opacity duration-500 ease-in-out ${colonOpacityClass}`}>:</span>
-              <span>{timeDisplay.seconds}</span>
             </div>
             {/* Subtle hint to click */}
             <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
@@ -508,13 +600,15 @@ export const TimerWidget: React.FC = () => {
             <ResetIcon />
           </button>
 
-          <button
-            onClick={togglePiP}
-            className={`p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 ${isPiPActive ? 'text-indigo-400' : 'text-zinc-400 hover:text-zinc-200'} shadow-lg transition-transform active:scale-95`}
-            title="Toggle Picture-in-Picture"
-          >
-            <PiPIcon />
-          </button>
+          {isPiPSupported && (
+            <button
+              onClick={togglePiP}
+              className={`p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 ${isPiPActive ? 'text-indigo-400' : 'text-zinc-400 hover:text-zinc-200'} shadow-lg transition-transform active:scale-95`}
+              title="Toggle Picture-in-Picture"
+            >
+              <PiPIcon />
+            </button>
+          )}
         </div>
       </div>
     </div>

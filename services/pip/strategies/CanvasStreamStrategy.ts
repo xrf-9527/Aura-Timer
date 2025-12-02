@@ -1,5 +1,5 @@
 import { IPiPStrategy, PiPState, PiPCallbacks } from './IPiPStrategy.ts';
-import { TimerStatus } from '../../../types';
+import { drawTimerOnCanvas } from '../drawTimerCanvas.ts';
 
 export class CanvasStreamStrategy implements IPiPStrategy {
     public isActive: boolean = false;
@@ -105,108 +105,7 @@ export class CanvasStreamStrategy implements IPiPStrategy {
     private draw(state: PiPState) {
         if (!this.ctx || !this.canvas) return;
 
-        const width = this.canvas.width;
-        const height = this.canvas.height;
-
-        // 1. Clear background
-        this.ctx.fillStyle = '#1e1e23'; // Matches Aura Timer dark theme
-        this.ctx.fillRect(0, 0, width, height);
-
-        // 2. Calculate dynamic font size based on canvas dimensions
-        // Responsive scaling: min of 28% width or 50% height
-        const fontSize = Math.min(width * 0.28, height * 0.5);
-
-        // 3. Text Configuration
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.font = `700 ${fontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
-
-        // 4. Determine Color (keep digits in a soft, high-contrast gray)
-        this.ctx.fillStyle = '#e4e4e7'; // Zinc-200
-
-        // Apply a soft colored glow for warning / overtime while keeping digits readable
-        this.ctx.shadowBlur = 0;
-        this.ctx.shadowColor = 'transparent';
-        if (state.isOvertime) {
-            this.ctx.shadowColor = 'rgba(251, 191, 36, 0.28)';
-            this.ctx.shadowBlur = fontSize * 0.1;
-        } else if (state.isWarning && state.status === TimerStatus.RUNNING) {
-            this.ctx.shadowColor = 'rgba(251, 113, 133, 0.22)';
-            this.ctx.shadowBlur = fontSize * 0.08;
-        }
-
-        // 5. Build time parts and draw with breathing colons
-        const { hours, minutes, seconds } = state.timeString;
-        const showHours = parseInt(hours) > 0;
-
-        const timeParts: string[] = [];
-        if (showHours) {
-            timeParts.push(hours, minutes, seconds);
-        } else {
-            timeParts.push(minutes, seconds);
-        }
-
-        // Calculate colon opacity for breathing effect
-        const isRunning = state.status === TimerStatus.RUNNING;
-        const absSeconds = Math.abs(state.timeLeft);
-        const colonOpacity = (isRunning && absSeconds % 2 === 1) ? 0.55 : 1.0;
-
-        // 6. Pre-measure all parts for accurate centering
-        // Avoids cumulative error from multiple measureText calls
-        interface MeasuredPart {
-            text: string;
-            width: number;
-            isColon: boolean;
-            opacity: number;
-        }
-
-        const measuredParts: MeasuredPart[] = [];
-        let totalWidth = 0;
-
-        // Measure negative sign if needed
-        if (state.isOvertime) {
-            const negWidth = this.ctx.measureText('-').width;
-            measuredParts.push({ text: '-', width: negWidth, isColon: false, opacity: 1.0 });
-            totalWidth += negWidth;
-        }
-
-        // Measure time parts and colons
-        timeParts.forEach((part, index) => {
-            const partWidth = this.ctx!.measureText(part).width;
-            measuredParts.push({ text: part, width: partWidth, isColon: false, opacity: 1.0 });
-            totalWidth += partWidth;
-
-            // Add colon measurement (except after last part)
-            if (index < timeParts.length - 1) {
-                const colonWidth = this.ctx!.measureText(':').width;
-                measuredParts.push({ text: ':', width: colonWidth, isColon: true, opacity: colonOpacity });
-                totalWidth += colonWidth;
-            }
-        });
-
-        // 7. Calculate starting x position for perfect centering
-        let x = (width - totalWidth) / 2;
-        const y = height / 2;
-
-        // 8. Draw all parts using pre-measured widths
-        measuredParts.forEach((part) => {
-            this.ctx!.globalAlpha = part.opacity;
-            this.ctx!.fillText(part.text, x, y);
-            x += part.width;  // Use cached measurement
-        });
-
-        // 9. Reset alpha and shadow
-        this.ctx.globalAlpha = 1.0;
-        this.ctx.shadowBlur = 0;
-        this.ctx.shadowColor = 'transparent';
-
-        // 10. Draw status indicator for paused state
-        if (state.status === TimerStatus.PAUSED) {
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            const statusFontSize = fontSize * 0.12; // 12% of main font
-            this.ctx.font = `600 ${statusFontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
-            this.ctx.fillText('PAUSED', width / 2, height / 2 + fontSize * 0.6);
-        }
+        drawTimerOnCanvas(this.canvas, this.ctx, state);
     }
 
     /**

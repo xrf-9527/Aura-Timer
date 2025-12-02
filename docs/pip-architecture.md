@@ -13,7 +13,8 @@
 本设计旨在为 Aura-Timer 引入跨浏览器的“画中画 (Picture-in-Picture, PiP)”功能。鉴于浏览器对 PiP 标准支持的分裂现状，本方案定义了一种**混合架构 (Hybrid Architecture)**：
 
 1.  **Chromium 内核 (Chrome/Edge):** 使用 `Document Picture-in-Picture API`，提供可交互的 DOM 悬浮窗。
-2.  **Gecko/WebKit 内核 (Firefox/Safari):** 使用 `HTMLVideoElement PiP` 配合 Canvas 实时流，提供只读的视觉悬浮窗。
+2.  **支持元素 PiP 的浏览器 (Chrome/Safari 等):** 使用 `HTMLVideoElement` + Canvas 实时流，提供只读的视觉悬浮窗。
+3.  **Firefox:** 使用同一套 Canvas 绘制逻辑，在主界面中渲染为可见 `<video>`，由 Firefox 自带的 PiP 按钮开启画中画（**不使用 Web PiP JS API**）。
 
 -----
 
@@ -57,7 +58,7 @@ classDiagram
     
     PiPManager --> IPiPStrategy
     IPiPStrategy <|.. DocumentPiPStrategy : Chrome/Edge
-    IPiPStrategy <|.. CanvasStreamStrategy : Firefox/Safari
+    IPiPStrategy <|.. CanvasStreamStrategy : Element PiP Browsers (runtime-detected)
 ```
 
 ### 3.2 策略 A: Document PiP (针对 Chrome 111+)
@@ -69,9 +70,11 @@ classDiagram
       * **样式同步:** 必须遍历主窗口的 `document.styleSheets` 并克隆到 PiP 窗口，否则悬浮窗将无样式。
       * **事件代理:** PiP 窗口内的点击事件需调用主应用的回调函数（React Portal 可自动处理此上下文，原生 JS 需手动绑定）。
 
-### 3.3 策略 B: Canvas Stream Adapter (针对 Firefox/Safari)
+### 3.3 策略 B: Canvas Stream Adapter (针对支持元素 PiP 的浏览器)
 
-利用 Canvas 绘图生成 WebRTC 媒体流，伪装成视频欺骗浏览器开启 PiP。
+利用 Canvas 绘图生成媒体流，通过 `HTMLVideoElement.requestPictureInPicture()` 在支持该 API 的浏览器中开启 PiP。当前目标是**所有在运行时检测到实现了元素 PiP API 的浏览器（以特性检测为准，而不是特定厂商名称）**。  
+
+对于 Firefox，本项目仅复用同一套 Canvas 绘制逻辑，在主界面中渲染为一个可见 `<video>` 元素，由 Firefox 自带的 PiP 按钮启动画中画，而不是通过 Web API 直接调用。
 
   * **技术栈:** `HTMLCanvasElement.captureStream()`, `HTMLVideoElement`
   * **性能规范:**
@@ -83,7 +86,7 @@ classDiagram
 
 ## 4\. 核心代码实现参考 (Core Implementation)
 
-### 4.1 PiP Manager (入口)
+### 4.1 PiP Manager (入口：Web PiP 支持的浏览器)
 
 ```javascript
 export class PiPManager {
@@ -93,11 +96,13 @@ export class PiPManager {
 
   getBestStrategy() {
     if ('documentPictureInPicture' in window) {
+      // Document PiP - Chrome/Edge
       return new DocumentPiPStrategy();
     } else if (document.pictureInPictureEnabled) {
+      // Element PiP - Chrome/Safari 等支持 HTMLVideoElement.requestPictureInPicture 的浏览器
       return new CanvasStreamStrategy();
     }
-    throw new Error('PiP not supported');
+    throw new Error('PiP not supported by Web API');
   }
 
   async toggle(timerState, callbacks) {
@@ -119,7 +124,7 @@ export class PiPManager {
 }
 ```
 
-### 4.2 Canvas Strategy (Firefox 优化版)
+### 4.2 Canvas Strategy (元素 PiP 优化版)
 
 ```javascript
 class CanvasStreamStrategy {
@@ -148,7 +153,7 @@ class CanvasStreamStrategy {
     
     try {
       await this.video.play();
-      await this.video.requestPictureInPicture();
+      await this.video.requestPictureInPicture(); // 仅在支持元素 PiP 的浏览器中可用
     } catch (e) {
       console.error("Firefox PiP launch failed:", e);
       this.close();
@@ -221,15 +226,16 @@ class CanvasStreamStrategy {
 
 ### 5.1 后台标签页冻结 (Background Tab Discarding)
 
-**问题:** 当用户最小化浏览器主窗口只留 PiP 时，浏览器会为了省电停止 `requestAnimationFrame`。
-**解决方案:**
+**问题:** 当用户最小化浏览器主窗口只留 PiP 时，浏览器会为了省电停止 `requestAnimationFrame`。  
+**解决方案（当前实现）:**
 
-1.  **Web Worker:** 将计时逻辑 (`setInterval`) 放入 Web Worker 中，通过 `postMessage` 驱动 UI。
-2.  **Audio Hack:** 在页面中循环播放一段**静音音频**，这会将标签页标记为 "Audio Playing"，防止被系统挂起（Firefox/Chrome 通用）。
+1.  使用基于时间戳的高精度计时器（见 `docs/timer-precision.md`），即使后台帧率降低也能恢复到正确时间。
+2.  在使用 Web PiP 的浏览器中，通过循环播放一段**静音音频**，将标签页标记为 "Audio Playing"，减少后台冻结概率。  
+    Firefox 路径不依赖 Web PiP，而是通过可见 `<video>` + 浏览器内建 PiP 按钮，仍可受益于音频保持激活。
 
 ### 5.2 错误处理
 
-  * **User Activation:** Firefox 强制要求 `requestPictureInPicture` 必须由用户点击事件直接触发（Event Handler 内部）。不能在 `setTimeout` 或 `async` 异步链过深的地方调用，否则会被拦截。
+  * **User Activation:** 对于通过 `requestPictureInPicture()` 启动的浏览器，需要确保调用发生在用户手势事件处理函数内（如 `click` 事件），否则可能被视为非用户触发而被拦截。当前 Firefox 路径不再使用该 API，而是依赖浏览器自带 PiP UI。
 
 ### 5.3 关闭回调与 PiP 窗口管理（实现约定）
 

@@ -29,8 +29,8 @@ export class PiPManager {
             return new DocumentPiPStrategy();
         }
 
-        // 2. Try Video/Canvas Picture-in-Picture (Firefox/Safari)
-        // Note: Firefox requires 'pictureInPictureEnabled' to be true
+        // 2. Try Video/Canvas Picture-in-Picture (element PiP)
+        // Used by browsers that support HTMLVideoElement.requestPictureInPicture
         if (document.pictureInPictureEnabled) {
             return new CanvasStreamStrategy();
         }

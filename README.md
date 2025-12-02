@@ -14,14 +14,15 @@ Aura Timer now has **built-in Picture-in-Picture support**:
 
 1. Visit [timer.xrf.sh](https://timer.xrf.sh)
 2. Start a timer
-3. Click the **PiP button** under the widget to open an always-on-top mini window  
-   - Chrome / Edge: uses the **Document Picture-in-Picture API**  
-   - Firefox / Safari: uses a **Canvas + Video Picture-in-Picture** fallback
+3. Use PiP in different browsers:
+   - **Chrome / Edge:** Click the **PiP button** under the widget → 使用 `Document Picture-in-Picture API` 打开可交互悬浮窗  
+   - **其他支持元素 PiP 的浏览器:** 点击 PiP 按钮 → 使用 Canvas + `HTMLVideoElement.requestPictureInPicture()` 打开只读 PiP（是否支持由运行时特性检测决定）  
+   - **Firefox:** 鼠标移动到计时器中间的时间区域，会看到浏览器自带的 PiP 按钮。点击该按钮即可进入 PiP（不再使用 Web PiP JS API）。
 
 If your browser does not support these APIs, you can still use a **PiP browser extension** as a fallback:
 
 - Chrome/Edge: [Picture-in-Picture Extension](https://chrome.google.com/webstore/detail/picture-in-picture-extens/hkgfoiooedgoejojocmhlaklaeopbecg)
-- Firefox: Built-in PiP (right-click video → "Picture-in-Picture")
+- Firefox: Built-in PiP（悬停视频 → 点击 PiP 按钮，或右键视频 → “画中画”）
 
 ## Features
 
