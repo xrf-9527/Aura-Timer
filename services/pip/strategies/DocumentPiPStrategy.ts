@@ -154,6 +154,8 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
         if (this.statusIcon) {
             this.statusIcon.innerHTML = this.getPlayPauseIcon(state.status);
+            // Re-apply SVG sizing to keep icon perfectly centered within the circle
+            this.handleResize();
         }
     }
 
