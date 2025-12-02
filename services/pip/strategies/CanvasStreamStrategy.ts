@@ -104,8 +104,8 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         // 2. Text Configuration
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        // Use high-quality font stack matching Document PiP (700 = bold weight)
-        this.ctx.font = '700 120px ui-monospace, Menlo, Monaco, Consolas, monospace';
+        // Use high-quality font stack matching Document PiP (700 = bold weight, increased from 120px for better prominence)
+        this.ctx.font = '700 180px ui-monospace, Menlo, Monaco, Consolas, monospace';
 
         // 3. Determine Color
         if (state.isOvertime) {

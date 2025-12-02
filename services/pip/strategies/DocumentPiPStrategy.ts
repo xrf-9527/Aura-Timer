@@ -107,15 +107,15 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
         // Toggle Button
         const toggleBtn = doc.createElement('button');
-        toggleBtn.className = 'p-3 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer border-none outline-none flex items-center justify-center';
+        toggleBtn.className = 'p-2 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer border-none outline-none flex items-center justify-center';
         toggleBtn.innerHTML = this.getPlayPauseIcon(state.status);
         toggleBtn.onclick = () => this.callbacks?.onToggle();
         this.statusIcon = toggleBtn;
 
         // Reset Button
         const resetBtn = doc.createElement('button');
-        resetBtn.className = 'p-3 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer border-none outline-none flex items-center justify-center';
-        resetBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"></path><path d="M3 3v9h9"></path></svg>';
+        resetBtn.className = 'p-2 rounded-full bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer border-none outline-none flex items-center justify-center';
+        resetBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"></path><path d="M3 3v9h9"></path></svg>';
         resetBtn.onclick = () => this.callbacks?.onReset();
 
         controls.appendChild(toggleBtn);
@@ -159,18 +159,20 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             colorClass = 'text-rose-400';
         }
 
-        // Re-apply classes (text-8xl = 96px, bold weight, optimized spacing for PiP)
-        this.timeDisplay.className = `text-8xl font-mono font-bold tracking-tight drop-shadow-sm ${colorClass}`;
+        // Re-apply classes (larger font for better readability in PiP)
+        this.timeDisplay.className = `font-mono font-bold tracking-tight drop-shadow-sm ${colorClass}`;
+        this.timeDisplay.style.fontSize = '140px'; // Larger than text-8xl (96px) for prominence
+        this.timeDisplay.style.lineHeight = '1';
         this.timeDisplay.textContent = text;
     }
 
     private getPlayPauseIcon(status: TimerStatus): string {
         if (status === TimerStatus.RUNNING) {
             // Pause Icon
-            return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
         } else {
             // Play Icon
-            return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
         }
     }
 
