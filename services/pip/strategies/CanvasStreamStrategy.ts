@@ -13,14 +13,19 @@ export class CanvasStreamStrategy implements IPiPStrategy {
     private currentState: PiPState | null = null;
     private readonly fps: number = 10;
 
+    // Responsive sizing
+    private pipWindow: PictureInPictureWindow | null = null;
+    private defaultCanvasWidth: number = 600;
+    private defaultCanvasHeight: number = 340;
+
     async open(initialState: PiPState, callbacks?: PiPCallbacks): Promise<void> {
         this.callbacks = callbacks || null;
         this.currentState = initialState;
 
-        // 1. Create Canvas
+        // 1. Create Canvas with default size
         this.canvas = document.createElement('canvas');
-        this.canvas.width = 600;
-        this.canvas.height = 340;
+        this.canvas.width = this.defaultCanvasWidth;
+        this.canvas.height = this.defaultCanvasHeight;
         this.ctx = this.canvas.getContext('2d', { alpha: false }); // Optimize for performance
 
         // Enable high-quality text rendering
@@ -67,6 +72,19 @@ export class CanvasStreamStrategy implements IPiPStrategy {
                 this.callbacks.onClose();
             }
         });
+
+        // 7. Setup responsive sizing on PiP window
+        this.video.addEventListener('enterpictureinpicture', (event) => {
+            this.pipWindow = event.pictureInPictureWindow;
+
+            // Listen for PiP window resize
+            this.pipWindow.addEventListener('resize', () => {
+                this.handlePiPResize();
+            });
+
+            // Initial resize to match PiP window
+            this.handlePiPResize();
+        });
     }
 
     update(state: PiPState): void {
@@ -97,17 +115,20 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         const width = this.canvas.width;
         const height = this.canvas.height;
 
-        // 1. Background
+        // 1. Clear background
         this.ctx.fillStyle = '#1e1e23'; // Matches Aura Timer dark theme
         this.ctx.fillRect(0, 0, width, height);
 
-        // 2. Text Configuration
+        // 2. Calculate dynamic font size based on canvas dimensions
+        // Responsive scaling: min of 28% width or 50% height
+        const fontSize = Math.min(width * 0.28, height * 0.5);
+
+        // 3. Text Configuration
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        // Use high-quality font stack matching Document PiP (700 = bold weight, increased from 120px for better prominence)
-        this.ctx.font = '700 180px ui-monospace, Menlo, Monaco, Consolas, monospace';
+        this.ctx.font = `700 ${fontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
 
-        // 3. Determine Color
+        // 4. Determine Color
         if (state.isOvertime) {
             this.ctx.fillStyle = '#fcd34d'; // Amber-300
         } else if (state.isWarning) {
@@ -116,27 +137,97 @@ export class CanvasStreamStrategy implements IPiPStrategy {
             this.ctx.fillStyle = '#e4e4e7'; // Zinc-200
         }
 
-        // 4. Format Text
+        // 5. Build time parts and draw with breathing colons
         const { hours, minutes, seconds } = state.timeString;
         const showHours = parseInt(hours) > 0;
 
-        let text = `${minutes}:${seconds}`;
+        const timeParts: string[] = [];
         if (showHours) {
-            text = `${hours}:${text}`;
+            timeParts.push(hours, minutes, seconds);
+        } else {
+            timeParts.push(minutes, seconds);
         }
+
+        // Calculate colon opacity for breathing effect
+        const isRunning = state.status === TimerStatus.RUNNING;
+        const absSeconds = Math.abs(state.timeLeft);
+        const colonOpacity = (isRunning && absSeconds % 2 === 1) ? 0.4 : 1.0;
+
+        // 6. Pre-measure all parts for accurate centering
+        // Avoids cumulative error from multiple measureText calls
+        interface MeasuredPart {
+            text: string;
+            width: number;
+            isColon: boolean;
+            opacity: number;
+        }
+
+        const measuredParts: MeasuredPart[] = [];
+        let totalWidth = 0;
+
+        // Measure negative sign if needed
         if (state.isOvertime) {
-            text = `-${text}`;
+            const negWidth = this.ctx.measureText('-').width;
+            measuredParts.push({ text: '-', width: negWidth, isColon: false, opacity: 1.0 });
+            totalWidth += negWidth;
         }
 
-        // 5. Draw Text
-        this.ctx.fillText(text, width / 2, height / 2);
+        // Measure time parts and colons
+        timeParts.forEach((part, index) => {
+            const partWidth = this.ctx!.measureText(part).width;
+            measuredParts.push({ text: part, width: partWidth, isColon: false, opacity: 1.0 });
+            totalWidth += partWidth;
 
-        // 6. Draw Status Icon (Simple shapes)
-        // Draw small indicator for paused state
+            // Add colon measurement (except after last part)
+            if (index < timeParts.length - 1) {
+                const colonWidth = this.ctx!.measureText(':').width;
+                measuredParts.push({ text: ':', width: colonWidth, isColon: true, opacity: colonOpacity });
+                totalWidth += colonWidth;
+            }
+        });
+
+        // 7. Calculate starting x position for perfect centering
+        let x = (width - totalWidth) / 2;
+        const y = height / 2;
+
+        // 8. Draw all parts using pre-measured widths
+        measuredParts.forEach((part) => {
+            this.ctx!.globalAlpha = part.opacity;
+            this.ctx!.fillText(part.text, x, y);
+            x += part.width;  // Use cached measurement
+        });
+
+        // 9. Reset alpha
+        this.ctx.globalAlpha = 1.0;
+
+        // 10. Draw status indicator for paused state
         if (state.status === TimerStatus.PAUSED) {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            this.ctx.font = '600 20px ui-monospace, Menlo, Monaco, Consolas, monospace';
-            this.ctx.fillText('PAUSED', width / 2, height / 2 + 60);
+            const statusFontSize = fontSize * 0.12; // 12% of main font
+            this.ctx.font = `600 ${statusFontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
+            this.ctx.fillText('PAUSED', width / 2, height / 2 + fontSize * 0.6);
+        }
+    }
+
+    /**
+     * Handle PiP window resize by updating canvas dimensions
+     * Canvas automatically scales content when dimensions change
+     */
+    private handlePiPResize() {
+        if (!this.pipWindow || !this.canvas) return;
+
+        const newWidth = this.pipWindow.width;
+        const newHeight = this.pipWindow.height;
+
+        // Only resize if dimensions actually changed (avoid unnecessary redraws)
+        if (this.canvas.width !== newWidth || this.canvas.height !== newHeight) {
+            this.canvas.width = newWidth;
+            this.canvas.height = newHeight;
+
+            // Force immediate redraw with new dimensions
+            if (this.currentState) {
+                this.draw(this.currentState);
+            }
         }
     }
 
@@ -166,5 +257,6 @@ export class CanvasStreamStrategy implements IPiPStrategy {
 
         this.canvas = null;
         this.ctx = null;
+        this.pipWindow = null;
     }
 }
