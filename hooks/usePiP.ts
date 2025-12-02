@@ -11,7 +11,8 @@ export const usePiP = (state: PiPState, callbacks: PiPCallbacks) => {
 
     useEffect(() => {
         if (pipManager.isActive) {
-            pipManager.update(state);
+            // Reconstruct state object from primitives to avoid dependency on state reference
+            pipManager.update({ timeLeft, totalSeconds, status, timeString, isOvertime, isWarning });
         }
     }, [timeLeft, totalSeconds, status, timeString, isOvertime, isWarning]);
 

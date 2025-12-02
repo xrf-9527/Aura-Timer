@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Position } from '../types';
 
 interface WidgetSize {
@@ -15,7 +15,9 @@ export const useDraggable = (
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const prevAspectRatio = useRef(typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 1);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  // React 19.2 best practice: plain functions for event handlers
+  // No need for useCallback unless passing to memo-wrapped components
+  const handleMouseDown = (e: React.MouseEvent) => {
     // Prevent dragging if interacting with inputs or buttons
     if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'BUTTON') {
       return;
@@ -26,9 +28,9 @@ export const useDraggable = (
       x: e.clientX - position.x,
       y: e.clientY - position.y
     });
-  }, [position]);
+  };
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     // Prevent dragging if interacting with inputs or buttons
     if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'BUTTON') {
       return;
@@ -40,54 +42,48 @@ export const useDraggable = (
       x: touch.clientX - position.x,
       y: touch.clientY - position.y
     });
-  }, [position]);
+  };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging) {
+  // React 19.2 best practice: Move event listeners inside useEffect
+  // Reference: https://react.dev/reference/react/useCallback
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
       setPosition({
         x: e.clientX - offset.x,
         y: e.clientY - offset.y
       });
-    }
-  }, [isDragging, offset]);
+    };
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (isDragging) {
+    const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
       setPosition({
         x: touch.clientX - offset.x,
         y: touch.clientY - offset.y
       });
-    }
-  }, [isDragging, offset]);
+    };
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
 
-  const handleTouchEnd = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
 
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleTouchMove);
-      window.addEventListener('touchend', handleTouchEnd);
-    } else {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [isDragging, offset.x, offset.y]); // Only primitive dependencies
 
   // Auto-center on screen rotation (progressive enhancement approach)
   useEffect(() => {

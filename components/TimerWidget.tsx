@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TimerStatus } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { getDurationFromQuery } from '../services/geminiService';
@@ -139,70 +139,62 @@ export const TimerWidget: React.FC = () => {
     return () => clearInterval(interval);
   }, [status, timeLeft]); // timeLeft dependency ensures restart sets new target
 
-  // Wake Lock Logic (Prevent Sleep)
-  const requestWakeLock = useCallback(async () => {
-    const wakeLock = navigator.wakeLock;
-    if (!wakeLock) {
-      return;
-    }
+  // React 19.2 best practice: Merge Wake Lock logic into single useEffect
+  // Move helper functions inside to avoid useCallback overhead
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      const wakeLock = navigator.wakeLock;
+      if (!wakeLock) return;
 
-    try {
-      const lock = await wakeLock.request('screen');
-      wakeLockRef.current = lock;
-      // console.log('Wake Lock acquired');
-      lock.addEventListener('release', () => {
-        // console.log('Wake Lock released');
-        wakeLockRef.current = null;
-      });
-    } catch (err: unknown) {
-      // If the error is "NotAllowedError", it means the browser or system policy blocked it.
-      // We suppress this specific warning to keep the console clean as the app works fine without it.
-      if (err instanceof Error && err.name !== 'NotAllowedError') {
-        console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
-      }
-    }
-  }, []);
-
-  const releaseWakeLock = useCallback(async () => {
-    if (wakeLockRef.current) {
       try {
-        await wakeLockRef.current.release();
-        wakeLockRef.current = null;
+        const lock = await wakeLock.request('screen');
+        wakeLockRef.current = lock;
+        lock.addEventListener('release', () => {
+          wakeLockRef.current = null;
+        });
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
+        // If the error is "NotAllowedError", it means the browser or system policy blocked it.
+        // We suppress this specific warning to keep the console clean as the app works fine without it.
+        if (err instanceof Error && err.name !== 'NotAllowedError') {
+          console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
         }
       }
-    }
-  }, []);
-
-  // Manage Wake Lock based on Timer Status
-  useEffect(() => {
-    if (status === TimerStatus.RUNNING) {
-      requestWakeLock();
-    } else {
-      releaseWakeLock();
-    }
-
-    // Cleanup on unmount
-    return () => {
-      releaseWakeLock();
     };
-  }, [status, requestWakeLock, releaseWakeLock]);
 
-  // Re-acquire Wake Lock on visibility change (browsers release it when tab is hidden)
-  useEffect(() => {
+    const releaseWakeLock = async () => {
+      if (wakeLockRef.current) {
+        try {
+          await wakeLockRef.current.release();
+          wakeLockRef.current = null;
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
+          }
+        }
+      }
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && status === TimerStatus.RUNNING) {
         requestWakeLock();
       }
     };
 
+    // Manage wake lock based on timer status
+    if (status === TimerStatus.RUNNING) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    // Re-acquire on visibility change (browsers release it when tab is hidden)
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }
-  }, [status, requestWakeLock]);
+      releaseWakeLock();
+    };
+  }, [status]); // Only primitive dependency
 
   // Format Time Helper
   const formatTime = (seconds: number) => {
@@ -216,16 +208,18 @@ export const TimerWidget: React.FC = () => {
     };
   };
 
-  const resetTimer = useCallback(() => {
+  // React 19.2 best practice: Plain functions without useCallback
+  // React Compiler will optimize these automatically when enabled
+  const resetTimer = () => {
     setStatus(TimerStatus.IDLE);
     setTimeLeft(totalSeconds);
     // Clear timestamp to ensure fresh start on next play
     expiryTimestampRef.current = null;
-  }, [totalSeconds]);
+  };
 
-  const toggleTimer = useCallback(() => {
+  const toggleTimer = () => {
     setStatus((prev) => (prev === TimerStatus.RUNNING ? TimerStatus.PAUSED : TimerStatus.RUNNING));
-  }, []);
+  };
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -233,15 +227,19 @@ export const TimerWidget: React.FC = () => {
       if (isEditing || showAiInput) return; // Disable shortcuts while editing
       if (e.code === 'Space') {
         e.preventDefault();
-        toggleTimer();
+        // Inline toggle logic to avoid function dependency
+        setStatus((prev) => (prev === TimerStatus.RUNNING ? TimerStatus.PAUSED : TimerStatus.RUNNING));
       }
       if (e.code === 'KeyR') {
-        resetTimer();
+        // Inline reset logic to avoid function dependency
+        setStatus(TimerStatus.IDLE);
+        setTimeLeft(totalSeconds);
+        expiryTimestampRef.current = null;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleTimer, resetTimer, isEditing, showAiInput]);
+  }, [isEditing, showAiInput, totalSeconds]);
 
   // Handle Edit
   const handleTimeClick = () => {
@@ -334,11 +332,13 @@ export const TimerWidget: React.FC = () => {
   const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
   // PiP Integration
-  const pipCallbacks = React.useMemo(() => ({
+  // React 19.2 best practice: No useMemo for simple object creation
+  // The cost of creating this object is negligible compared to memoization overhead
+  const pipCallbacks = {
     onToggle: toggleTimer,
     onReset: resetTimer,
     onClose: () => { }
-  }), [toggleTimer, resetTimer]);
+  };
 
   const { togglePiP, isPiPActive } = usePiP(
     {

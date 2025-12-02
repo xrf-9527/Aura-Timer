@@ -10,7 +10,7 @@ Aura Timer is a macOS-inspired floating timer widget built with React 19.2, Type
 - Smooth fade transitions and modern UI
 
 **Tech Stack:**
-- React 19.2.0
+- React 19.2.0 with React Compiler 1.0.0
 - TypeScript 5.3.0
 - Vite 7.2.4
 - Tailwind CSS (via CDN)
@@ -65,8 +65,17 @@ Auto-installs dependencies in Claude Code web/remote sessions via `scripts/insta
 
 ### React 19.2 Best Practices (CRITICAL)
 
-- **DO NOT use `useCallback` by default** - Move functions inside `useEffect` when only used there ([official guidance](https://react.dev/reference/react/useCallback))
-- **DO** use primitive dependencies in `useEffect` dependency arrays, not function references
+**✅ Implemented Optimizations:**
+- **React Compiler 1.0.0 Enabled** - Automatic memoization eliminates manual `useCallback/useMemo/memo` ([announcement](https://react.dev/blog/2025/10/07/react-compiler-1))
+- **Function Placement** - Event listeners moved inside `useEffect` blocks (see `useDraggable.ts:49-86`, `TimerWidget.tsx:144-197`)
+- **Primitive Dependencies** - `useEffect` arrays contain only primitive values, not function references
+- **Merged Effects** - Wake Lock logic consolidated into single `useEffect` (`TimerWidget.tsx:144-197`)
+- **Removed Unnecessary Hooks** - Eliminated 11 `useCallback` instances and 1 `useMemo` across codebase
+
+**Coding Guidelines:**
+- **DO NOT use `useCallback`/`useMemo` manually** - React Compiler handles optimization automatically ([official guidance](https://react.dev/reference/react/useCallback))
+- **DO** move functions inside `useEffect` when only used there
+- **DO** use primitive dependencies in `useEffect` dependency arrays
 - **DO** use named exports for components, default export only for App.tsx
 - **PREFER `matchMedia` API over `resize` events** - For responsive breakpoints, use `window.matchMedia('(max-width: 768px)').addEventListener('change', handler)` instead of resize events. Only fires when crossing thresholds, not on every pixel change. Include `addListener` fallback for Safari < 14. (See: `useDraggable.ts`, `TimerWidget.tsx`)
 
@@ -129,6 +138,41 @@ Timestamp-based calculation (not tick counting) eliminates cumulative drift. 100
 ### PiP System
 
 Strategy pattern for cross-browser support: Document PiP (Chrome/Edge) or Canvas Stream (Firefox/Safari). See [`docs/pip-architecture.md`](../docs/pip-architecture.md)
+
+### React Compiler Integration
+
+**Status**: ✅ Enabled since 2025-12-02
+
+**Configuration** (`vite.config.ts`):
+```typescript
+plugins: [
+  react({
+    babel: {
+      plugins: [['babel-plugin-react-compiler', {}]]
+    }
+  })
+]
+```
+
+**Benefits**:
+- Automatic memoization of components and values
+- Eliminates need for manual `useCallback`, `useMemo`, and `React.memo`
+- Optimizes re-renders without developer intervention
+- Maintains code simplicity and readability
+
+**Optimizations Applied**:
+- Removed 11 `useCallback` instances (useDraggable: 6, TimerWidget: 4, ActionDock: 1)
+- Removed 1 `useMemo` instance (TimerWidget pipCallbacks)
+- Consolidated 3 `useEffect` blocks into 1 (TimerWidget Wake Lock logic)
+- Simplified dependency arrays to contain only primitive values
+
+**ESLint Integration** (Recommended for Future):
+While not currently configured, consider adding `eslint-plugin-react-hooks@latest` to detect Rules of React violations:
+```bash
+npm install --save-dev eslint eslint-plugin-react-hooks
+```
+
+See [React Compiler v1.0 Documentation](https://react.dev/blog/2025/10/07/react-compiler-1) for details.
 
 ## Known Issues & Considerations
 
@@ -198,6 +242,6 @@ npx tsc --noEmit        # Check TypeScript errors without building
 
 ---
 
-**Last Updated**: 2025-12-01
+**Last Updated**: 2025-12-02 (React Compiler Integration)
 **Project Version**: 1.0.0
 **Maintained By**: Team (via Claude Code Agent)

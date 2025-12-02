@@ -64,8 +64,9 @@ export class DocumentPiPStrategy implements IPiPStrategy {
                 const style = document.createElement('style');
                 style.textContent = cssRules;
                 pipWin.document.head.appendChild(style);
-            } catch (e) {
+            } catch {
                 // Fallback: Link to the external stylesheet
+                // Cross-origin stylesheets can't be read, link them instead
                 if (styleSheet.href) {
                     const link = document.createElement('link');
                     link.rel = 'stylesheet';

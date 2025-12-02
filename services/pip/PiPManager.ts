@@ -26,14 +26,12 @@ export class PiPManager {
     private getBestStrategy(): IPiPStrategy {
         // 1. Try Document Picture-in-Picture (Chrome 111+)
         if ('documentPictureInPicture' in window) {
-            console.log('PiPManager: Using DocumentPiPStrategy');
             return new DocumentPiPStrategy();
         }
 
         // 2. Try Video/Canvas Picture-in-Picture (Firefox/Safari)
         // Note: Firefox requires 'pictureInPictureEnabled' to be true
         if (document.pictureInPictureEnabled) {
-            console.log('PiPManager: Using CanvasStreamStrategy');
             return new CanvasStreamStrategy();
         }
 

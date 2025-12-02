@@ -8,7 +8,7 @@ declare global {
         readonly released: boolean;
         readonly type: WakeLockType;
         release(): Promise<void>;
-        onrelease: ((this: WakeLockSentinel, ev: Event) => any) | null;
+        onrelease: ((this: WakeLockSentinel, ev: Event) => void) | null;
     }
 
     type WakeLockType = 'screen';
@@ -25,7 +25,7 @@ declare global {
     interface DocumentPictureInPicture {
         requestWindow(options?: { width?: number; height?: number }): Promise<Window>;
         window: Window | null;
-        onenter: ((this: DocumentPictureInPicture, ev: Event) => any) | null;
+        onenter: ((this: DocumentPictureInPicture, ev: Event) => void) | null;
     }
 
     interface Window {

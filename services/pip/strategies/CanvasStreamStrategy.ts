@@ -41,7 +41,7 @@ export class CanvasStreamStrategy implements IPiPStrategy {
 
         // 4. Capture Stream
         // TypeScript might not know captureStream exists on HTMLCanvasElement
-        const stream = (this.canvas as any).captureStream(this.fps);
+        const stream = (this.canvas as HTMLCanvasElement & { captureStream(frameRate?: number): MediaStream }).captureStream(this.fps);
         this.video.srcObject = stream;
 
         // 5. Request PiP
