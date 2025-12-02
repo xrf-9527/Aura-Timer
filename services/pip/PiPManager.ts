@@ -43,7 +43,6 @@ export class PiPManager {
             this.strategy.close();
             this.strategy = null;
             this.stopAudio();
-            callbacks.onClose(); // Notify that we closed it
             return;
         }
 

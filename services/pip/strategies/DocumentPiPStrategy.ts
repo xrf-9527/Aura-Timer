@@ -74,14 +74,14 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             try {
                 // Try to access cssRules (might fail for cross-origin stylesheets)
                 const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                const style = document.createElement('style');
+                const style = pipWin.document.createElement('style');
                 style.textContent = cssRules;
                 pipWin.document.head.appendChild(style);
             } catch {
                 // Fallback: Link to the external stylesheet
                 // Cross-origin stylesheets can't be read, link them instead
                 if (styleSheet.href) {
-                    const link = document.createElement('link');
+                    const link = pipWin.document.createElement('link');
                     link.rel = 'stylesheet';
                     link.type = styleSheet.type;
                     link.media = styleSheet.media.toString();
@@ -207,8 +207,8 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
             // Update negative sign visibility
             if (state.isOvertime) {
-                if (!this.negativeSignSpan) {
-                    this.negativeSignSpan = document.createElement('span');
+                if (!this.negativeSignSpan && this.pipWindow) {
+                    this.negativeSignSpan = this.pipWindow.document.createElement('span');
                     this.negativeSignSpan.textContent = '-';
                     this.negativeSignSpan.style.marginRight = '0.1em';
                     this.timeDisplay.insertBefore(this.negativeSignSpan, this.timeDisplay.firstChild);
@@ -239,9 +239,13 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.colonSpans = [];
         this.negativeSignSpan = null;
 
+        if (!this.pipWindow) return;
+
+        const doc = this.pipWindow.document;
+
         // Add negative sign if overtime
         if (isOvertime) {
-            this.negativeSignSpan = document.createElement('span');
+            this.negativeSignSpan = doc.createElement('span');
             this.negativeSignSpan.textContent = '-';
             this.negativeSignSpan.style.marginRight = '0.1em';
             this.timeDisplay.appendChild(this.negativeSignSpan);
@@ -249,14 +253,14 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
         // Create and cache time part spans and colons
         timeParts.forEach((part, index) => {
-            const span = document.createElement('span');
+            const span = doc.createElement('span');
             span.textContent = part;
             this.timePartSpans.push(span);
             this.timeDisplay!.appendChild(span);
 
             // Add colon after each part except the last
             if (index < timeParts.length - 1) {
-                const colon = document.createElement('span');
+                const colon = doc.createElement('span');
                 colon.textContent = ':';
                 colon.className = 'colon';
                 colon.style.opacity = colonOpacity;
@@ -363,6 +367,11 @@ export class DocumentPiPStrategy implements IPiPStrategy {
      * Cleanup resources when PiP closes
      */
     private cleanup() {
+        if (!this.isActive && !this.pipWindow && !this.timeDisplay) {
+            // Already cleaned up
+            return;
+        }
+
         this.isActive = false;
 
         // Disconnect ResizeObserver
@@ -371,9 +380,10 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             this.resizeObserver = null;
         }
 
-        // Call user's close callback
+        // Call user's close callback once
         if (this.callbacks) {
             this.callbacks.onClose();
+            this.callbacks = null;
         }
 
         // Clear references

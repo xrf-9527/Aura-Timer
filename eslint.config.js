@@ -10,6 +10,7 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
+      'dist-worker/**',
       'node_modules/**',
       '*.config.js',
       '*.config.ts',

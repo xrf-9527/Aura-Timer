@@ -55,27 +55,11 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         const stream = (this.canvas as HTMLCanvasElement & { captureStream(frameRate?: number): MediaStream }).captureStream(this.fps);
         this.video.srcObject = stream;
 
-        // 5. Request PiP
+        // 5. Request PiP and bind window events
         try {
             await this.video.play();
-            await this.video.requestPictureInPicture();
-        } catch (e) {
-            console.error('CanvasStreamStrategy: Failed to open PiP', e);
-            this.close();
-            throw e;
-        }
-
-        // 6. Bind Events
-        this.video.addEventListener('leavepictureinpicture', () => {
-            this.close();
-            if (this.callbacks) {
-                this.callbacks.onClose();
-            }
-        });
-
-        // 7. Setup responsive sizing on PiP window
-        this.video.addEventListener('enterpictureinpicture', (event) => {
-            this.pipWindow = event.pictureInPictureWindow;
+            const pipWindow = await this.video.requestPictureInPicture();
+            this.pipWindow = pipWindow;
 
             // Listen for PiP window resize
             this.pipWindow.addEventListener('resize', () => {
@@ -84,7 +68,16 @@ export class CanvasStreamStrategy implements IPiPStrategy {
 
             // Initial resize to match PiP window
             this.handlePiPResize();
-        });
+
+            // 6. Bind leave PiP event
+            this.video.addEventListener('leavepictureinpicture', () => {
+                this.close();
+            });
+        } catch (e) {
+            console.error('CanvasStreamStrategy: Failed to open PiP', e);
+            this.close();
+            throw e;
+        }
     }
 
     update(state: PiPState): void {
@@ -232,6 +225,11 @@ export class CanvasStreamStrategy implements IPiPStrategy {
     }
 
     close(): void {
+        if (!this.isActive && !this.video && !this.canvas) {
+            // Already cleaned up
+            return;
+        }
+
         this.isActive = false;
         if (this._rafId) {
             cancelAnimationFrame(this._rafId);
@@ -258,5 +256,10 @@ export class CanvasStreamStrategy implements IPiPStrategy {
         this.canvas = null;
         this.ctx = null;
         this.pipWindow = null;
+
+        if (this.callbacks) {
+            this.callbacks.onClose();
+            this.callbacks = null;
+        }
     }
 }

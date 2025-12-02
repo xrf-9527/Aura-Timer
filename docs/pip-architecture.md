@@ -231,6 +231,19 @@ class CanvasStreamStrategy {
 
   * **User Activation:** Firefox 强制要求 `requestPictureInPicture` 必须由用户点击事件直接触发（Event Handler 内部）。不能在 `setTimeout` 或 `async` 异步链过深的地方调用，否则会被拦截。
 
+### 5.3 关闭回调与 PiP 窗口管理（实现约定）
+
+为保证行为一致性和可维护性，当前实现在关闭语义上约定如下：
+
+- **关闭回调统一由策略层触发：**  
+  `PiPManager` 不再直接调用 `callbacks.onClose()`，而是交由 `DocumentPiPStrategy` / `CanvasStreamStrategy` 在各自的 `close` / `cleanup` 中触发。这保证了每个 PiP 会话的关闭只通知一次，避免「Manager + Strategy」双重回调。
+
+- **Document PiP：幂等清理与事件绑定：**  
+  `DocumentPictureInPicture.requestWindow()` 返回的 `Window` 在策略内部持有并渲染 DOM。通过 `pagehide` 事件触发一次性 `cleanup`，内部包含幂等检查（重复调用不会再次触发回调或操作 DOM）。
+
+- **Canvas PiP：使用返回值绑定 PictureInPictureWindow：**  
+  `HTMLVideoElement.requestPictureInPicture()` 的返回值 `PictureInPictureWindow` 用于绑定 `resize` 事件，而不是依赖 `enterpictureinpicture` 事件时间顺序。`close()` 中负责停止 `requestAnimationFrame` 循环、停止 `MediaStreamTrack`、退出 PiP，并在最后触发一次 `callbacks.onClose()`。
+
 -----
 
 ## 6\. 权威参考 (References)
