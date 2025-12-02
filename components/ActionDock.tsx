@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- Icons ---
@@ -105,7 +105,9 @@ export const ActionDock: React.FC = () => {
             .catch(err => console.error('Failed to fetch likes:', err));
     }, []);
 
-    const handleLike = useCallback(async () => {
+    // React 19.2 best practice: Plain function without useCallback
+    // Only used in onClick handler, no need for memoization
+    const handleLike = async () => {
         // Optimistic update
         setLikes(prev => prev + 1);
         setIsLiked(true);
@@ -120,7 +122,7 @@ export const ActionDock: React.FC = () => {
             setIsLiked(false);
             console.error('Failed to update likes:', error);
         }
-    }, []);
+    };
 
     return (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
