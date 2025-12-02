@@ -322,8 +322,8 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         // Base ratio: 340px width -> 40px button (11.7%)
         const buttonSize = Math.max(32, Math.min(56, width * 0.11));
 
-        // Icon size: 65% of button size for proper padding
-        const buttonIconSize = buttonSize * 0.65;
+        // Icon size: ~55% of button size for comfortable padding
+        const buttonIconSize = buttonSize * 0.55;
 
         return { fontSize, buttonSize, buttonIconSize };
     }
