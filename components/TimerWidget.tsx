@@ -227,15 +227,19 @@ export const TimerWidget: React.FC = () => {
       if (isEditing || showAiInput) return; // Disable shortcuts while editing
       if (e.code === 'Space') {
         e.preventDefault();
-        toggleTimer();
+        // Inline toggle logic to avoid function dependency
+        setStatus((prev) => (prev === TimerStatus.RUNNING ? TimerStatus.PAUSED : TimerStatus.RUNNING));
       }
       if (e.code === 'KeyR') {
-        resetTimer();
+        // Inline reset logic to avoid function dependency
+        setStatus(TimerStatus.IDLE);
+        setTimeLeft(totalSeconds);
+        expiryTimestampRef.current = null;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleTimer, resetTimer, isEditing, showAiInput]);
+  }, [isEditing, showAiInput, totalSeconds]);
 
   // Handle Edit
   const handleTimeClick = () => {
