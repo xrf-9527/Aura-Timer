@@ -285,6 +285,15 @@ export const TimerWidget: React.FC = () => {
     };
   };
 
+  // Format total seconds to human-readable English: "15 min", "1 hr 30 min"
+  const formatTotalTime = (seconds: number): string => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0 && m > 0) return `${h} hr ${m} min`;
+    if (h > 0) return `${h} hr`;
+    return `${m} min`;
+  };
+
   // React 19.2 best practice: Plain functions without useCallback
   // React Compiler will optimize these automatically when enabled
   const resetTimer = () => {
@@ -509,8 +518,18 @@ export const TimerWidget: React.FC = () => {
                 </>
               )}
             </div>
-            {/* Subtle hint to click */}
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
+            {/* Total time subtitle - shows when running or paused */}
+            {(status === TimerStatus.RUNNING || status === TimerStatus.PAUSED) && (
+              <div className="text-xs text-zinc-400 mt-1 font-sans text-center">
+                {formatTotalTime(totalSeconds)}
+              </div>
+            )}
+            {/* Subtle hint to click - hidden when total time is shown */}
+            <div className={`absolute -bottom-4 left-1/2 transform -translate-x-1/2 transition-opacity text-xs text-zinc-400 font-sans ${
+              status === TimerStatus.RUNNING || status === TimerStatus.PAUSED
+                ? 'opacity-0 pointer-events-none'
+                : 'opacity-0 group-hover:opacity-100'
+            }`}>
               Edit
             </div>
           </div>
