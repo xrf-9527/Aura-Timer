@@ -1,6 +1,20 @@
 import { IPiPStrategy, PiPState, PiPCallbacks } from './IPiPStrategy.ts';
 import { TimerStatus } from '../../../types';
 
+// Format total time for display (iOS-style: "15分钟" or "1小时30分钟")
+function formatTotalTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (hours > 0 && minutes > 0) {
+        return `${hours}小时${minutes}分钟`;
+    } else if (hours > 0) {
+        return `${hours}小时`;
+    } else {
+        return `${minutes}分钟`;
+    }
+}
+
 export class DocumentPiPStrategy implements IPiPStrategy {
     public isActive: boolean = false;
     private pipWindow: Window | null = null;
@@ -24,6 +38,9 @@ export class DocumentPiPStrategy implements IPiPStrategy {
     private colonSpans: HTMLElement[] = [];
     private negativeSignSpan: HTMLElement | null = null;
     private lastShowHours: boolean = false;
+
+    // Cached total time display element
+    private totalTimeDisplay: HTMLElement | null = null;
 
     async open(initialState: PiPState, callbacks?: PiPCallbacks): Promise<void> {
         this.callbacks = callbacks || null;
@@ -117,6 +134,14 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.timeDisplay.style.justifyContent = 'center';
         this.updateTimeDisplay(state);
 
+        // Total Time Display (iOS-style)
+        this.totalTimeDisplay = doc.createElement('div');
+        this.totalTimeDisplay.textContent = formatTotalTime(state.totalSeconds);
+        this.totalTimeDisplay.style.color = 'rgba(161, 161, 170, 0.8)'; // zinc-400 at 80%
+        this.totalTimeDisplay.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        this.totalTimeDisplay.style.marginTop = '4px';
+        this.totalTimeDisplay.style.letterSpacing = '0.025em';
+
         // Controls Container
         const controls = doc.createElement('div');
         controls.className = 'flex gap-4 mt-4';
@@ -139,6 +164,9 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
         if (this.container && this.timeDisplay) {
             this.container.appendChild(this.timeDisplay);
+            if (this.totalTimeDisplay) {
+                this.container.appendChild(this.totalTimeDisplay);
+            }
             this.container.appendChild(controls);
             doc.body.appendChild(this.container);
         }
@@ -151,6 +179,11 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         if (!this.isActive || !this.pipWindow) return;
 
         this.updateTimeDisplay(state);
+
+        // Update total time display
+        if (this.totalTimeDisplay) {
+            this.totalTimeDisplay.textContent = formatTotalTime(state.totalSeconds);
+        }
 
         if (this.statusIcon) {
             this.statusIcon.innerHTML = this.getPlayPauseIcon(state.status);
@@ -342,6 +375,11 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         // Update time display font size
         this.timeDisplay.style.fontSize = `${fontSize}px`;
 
+        // Update total time display font size (16% of main font for readability)
+        if (this.totalTimeDisplay) {
+            this.totalTimeDisplay.style.fontSize = `${fontSize * 0.16}px`;
+        }
+
         // Update button sizes
         if (this.toggleBtn) {
             this.toggleBtn.style.width = `${buttonSize}px`;
@@ -396,6 +434,7 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.container = null;
         this.toggleBtn = null;
         this.resetBtn = null;
+        this.totalTimeDisplay = null;
 
         // Clear cached time display elements
         this.timePartSpans = [];

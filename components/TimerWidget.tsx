@@ -285,6 +285,20 @@ export const TimerWidget: React.FC = () => {
     };
   };
 
+  // Format Total Time for display (iOS-style: "15分钟" or "1小时30分钟")
+  const formatTotalTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}小时${minutes}分钟`;
+    } else if (hours > 0) {
+      return `${hours}小时`;
+    } else {
+      return `${minutes}分钟`;
+    }
+  };
+
   // React 19.2 best practice: Plain functions without useCallback
   // React Compiler will optimize these automatically when enabled
   const resetTimer = () => {
@@ -509,8 +523,14 @@ export const TimerWidget: React.FC = () => {
                 </>
               )}
             </div>
+            {/* Total Time Display (iOS-style) - Always visible below countdown */}
+            {!isFirefox && (
+              <div className="text-sm text-zinc-400/80 font-sans mt-1 tracking-wide">
+                {formatTotalTime(totalSeconds)}
+              </div>
+            )}
             {/* Subtle hint to click */}
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
               Edit
             </div>
           </div>

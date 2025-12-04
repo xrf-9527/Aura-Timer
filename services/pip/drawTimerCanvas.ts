@@ -1,6 +1,20 @@
 import { TimerStatus } from '../../types';
 import type { PiPState } from './strategies/IPiPStrategy';
 
+// Format total time for display (iOS-style: "15分钟" or "1小时30分钟")
+function formatTotalTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (hours > 0 && minutes > 0) {
+        return `${hours}小时${minutes}分钟`;
+    } else if (hours > 0) {
+        return `${hours}小时`;
+    } else {
+        return `${minutes}分钟`;
+    }
+}
+
 export function drawTimerOnCanvas(
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
@@ -92,12 +106,20 @@ export function drawTimerOnCanvas(
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
 
-    // 10. Draw status indicator for paused state
+    // 10. Draw total time display (iOS-style) below main countdown
+    const totalTimeText = formatTotalTime(state.totalSeconds);
+    const totalTimeFontSize = effectiveFontSize * 0.16; // 16% of main font for readability
+    ctx.fillStyle = 'rgba(161, 161, 170, 0.8)'; // zinc-400 at 80% opacity
+    ctx.textAlign = 'center';
+    ctx.font = `500 ${totalTimeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(totalTimeText, width / 2, y + effectiveFontSize * 0.45);
+
+    // 11. Draw status indicator for paused state
     if (state.status === TimerStatus.PAUSED) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.textAlign = 'center';
         const statusFontSize = effectiveFontSize * 0.12; // 12% of main font
         ctx.font = `600 ${statusFontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
-        ctx.fillText('PAUSED', width / 2, height / 2 + effectiveFontSize * 0.6);
+        ctx.fillText('PAUSED', width / 2, y + effectiveFontSize * 0.75);
     }
 }
