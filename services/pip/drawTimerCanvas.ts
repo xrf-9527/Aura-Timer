@@ -1,5 +1,6 @@
 import { TimerStatus } from '../../types';
 import type { PiPState } from './strategies/IPiPStrategy';
+import { formatTotalTime } from '../../utils/formatTime';
 
 export function drawTimerOnCanvas(
     canvas: HTMLCanvasElement,
@@ -92,12 +93,20 @@ export function drawTimerOnCanvas(
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
 
-    // 10. Draw status indicator for paused state
+    // 10. Draw total time display (iOS-style) below main countdown
+    const totalTimeText = formatTotalTime(state.totalSeconds);
+    const totalTimeFontSize = effectiveFontSize * 0.16; // 16% of main font for readability
+    ctx.fillStyle = 'rgba(161, 161, 170, 0.8)'; // zinc-400 at 80% opacity
+    ctx.textAlign = 'center';
+    ctx.font = `500 ${totalTimeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(totalTimeText, width / 2, y + effectiveFontSize * 0.45);
+
+    // 11. Draw status indicator for paused state
     if (state.status === TimerStatus.PAUSED) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.textAlign = 'center';
         const statusFontSize = effectiveFontSize * 0.12; // 12% of main font
         ctx.font = `600 ${statusFontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
-        ctx.fillText('PAUSED', width / 2, height / 2 + effectiveFontSize * 0.6);
+        ctx.fillText('PAUSED', width / 2, y + effectiveFontSize * 0.75);
     }
 }

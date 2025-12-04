@@ -5,6 +5,7 @@ import { getDurationFromQuery } from '../services/geminiService';
 import { usePiP } from '../hooks/usePiP';
 import type { PiPState } from '../services/pip/strategies/IPiPStrategy';
 import { drawTimerOnCanvas } from '../services/pip/drawTimerCanvas.ts';
+import { formatTotalTime } from '../utils/formatTime';
 
 // Icons
 const PlayIcon = () => (
@@ -509,8 +510,14 @@ export const TimerWidget: React.FC = () => {
                 </>
               )}
             </div>
+            {/* Total Time Display (iOS-style) - Always visible below countdown */}
+            {!isFirefox && (
+              <div className="text-sm text-zinc-400/80 font-sans mt-1 tracking-wide">
+                {formatTotalTime(totalSeconds)}
+              </div>
+            )}
             {/* Subtle hint to click */}
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-400 font-sans">
               Edit
             </div>
           </div>
