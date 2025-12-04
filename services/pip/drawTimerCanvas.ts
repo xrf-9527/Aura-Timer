@@ -1,19 +1,6 @@
 import { TimerStatus } from '../../types';
 import type { PiPState } from './strategies/IPiPStrategy';
-
-// Format total time for display (iOS-style: "15分钟" or "1小时30分钟")
-function formatTotalTime(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0 && minutes > 0) {
-        return `${hours}小时${minutes}分钟`;
-    } else if (hours > 0) {
-        return `${hours}小时`;
-    } else {
-        return `${minutes}分钟`;
-    }
-}
+import { formatTotalTime } from '../../utils/formatTime';
 
 export function drawTimerOnCanvas(
     canvas: HTMLCanvasElement,

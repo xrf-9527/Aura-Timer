@@ -5,6 +5,7 @@ import { getDurationFromQuery } from '../services/geminiService';
 import { usePiP } from '../hooks/usePiP';
 import type { PiPState } from '../services/pip/strategies/IPiPStrategy';
 import { drawTimerOnCanvas } from '../services/pip/drawTimerCanvas.ts';
+import { formatTotalTime } from '../utils/formatTime';
 
 // Icons
 const PlayIcon = () => (
@@ -283,20 +284,6 @@ export const TimerWidget: React.FC = () => {
       minutes: m.toString().padStart(2, '0'),
       seconds: s.toString().padStart(2, '0')
     };
-  };
-
-  // Format Total Time for display (iOS-style: "15分钟" or "1小时30分钟")
-  const formatTotalTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0 && minutes > 0) {
-      return `${hours}小时${minutes}分钟`;
-    } else if (hours > 0) {
-      return `${hours}小时`;
-    } else {
-      return `${minutes}分钟`;
-    }
   };
 
   // React 19.2 best practice: Plain functions without useCallback
