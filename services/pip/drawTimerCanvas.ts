@@ -1,6 +1,6 @@
 import { TimerStatus } from '../../types';
 import type { PiPState } from './strategies/IPiPStrategy';
-import { formatTotalTime } from '../../utils/formatTime';
+import { formatDateTime, formatTotalTime } from '../../utils/formatTime';
 
 export function drawTimerOnCanvas(
     canvas: HTMLCanvasElement,
@@ -93,7 +93,16 @@ export function drawTimerOnCanvas(
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
 
-    // 10. Draw total time display (iOS-style) below main countdown
+    // 10. Draw current date and time above main countdown
+    const { weekday, time } = formatDateTime();
+    const dateTimeText = `${weekday} ${time}`;
+    const dateTimeFontSize = Math.max(10, effectiveFontSize * 0.14); // Min 10px for readability
+    ctx.fillStyle = 'rgba(161, 161, 170, 0.7)'; // zinc-400 at 70% opacity (slightly dimmer than total time)
+    ctx.textAlign = 'center';
+    ctx.font = `500 ${dateTimeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(dateTimeText, width / 2, y - effectiveFontSize * 0.45);
+
+    // 11. Draw total time display (iOS-style) below main countdown
     const totalTimeText = formatTotalTime(state.totalSeconds);
     const totalTimeFontSize = effectiveFontSize * 0.16; // 16% of main font for readability
     ctx.fillStyle = 'rgba(161, 161, 170, 0.8)'; // zinc-400 at 80% opacity
@@ -101,7 +110,7 @@ export function drawTimerOnCanvas(
     ctx.font = `500 ${totalTimeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
     ctx.fillText(totalTimeText, width / 2, y + effectiveFontSize * 0.45);
 
-    // 11. Draw status indicator for paused state
+    // 12. Draw status indicator for paused state
     if (state.status === TimerStatus.PAUSED) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.textAlign = 'center';

@@ -1,6 +1,6 @@
 import { IPiPStrategy, PiPState, PiPCallbacks } from './IPiPStrategy.ts';
 import { TimerStatus } from '../../../types';
-import { formatTotalTime } from '../../../utils/formatTime';
+import { formatDateTime, formatTotalTime } from '../../../utils/formatTime';
 
 export class DocumentPiPStrategy implements IPiPStrategy {
     public isActive: boolean = false;
@@ -28,6 +28,10 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
     // Cached total time display element
     private totalTimeDisplay: HTMLElement | null = null;
+
+    // Current date/time display
+    private dateTimeDisplay: HTMLElement | null = null;
+    private dateTimeInterval: ReturnType<typeof setInterval> | null = null;
 
     async open(initialState: PiPState, callbacks?: PiPCallbacks): Promise<void> {
         this.callbacks = callbacks || null;
@@ -114,6 +118,27 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.container = doc.createElement('div');
         this.container!.className = 'flex flex-col items-center justify-center w-full h-full select-none';
 
+        // Date/Time Display (current weekday and time)
+        const getDateTimeText = () => {
+            const { weekday, time } = formatDateTime();
+            return `${weekday} ${time}`;
+        };
+
+        this.dateTimeDisplay = doc.createElement('div');
+        this.dateTimeDisplay.textContent = getDateTimeText();
+        this.dateTimeDisplay.style.color = 'rgba(161, 161, 170, 0.7)'; // zinc-400 at 70%
+        this.dateTimeDisplay.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        this.dateTimeDisplay.style.fontWeight = '500';
+        this.dateTimeDisplay.style.marginBottom = '4px';
+        this.dateTimeDisplay.style.letterSpacing = '0.025em';
+
+        // Start interval to update date/time every second
+        this.dateTimeInterval = setInterval(() => {
+            if (this.dateTimeDisplay) {
+                this.dateTimeDisplay.textContent = getDateTimeText();
+            }
+        }, 1000);
+
         // Time Display
         this.timeDisplay = doc.createElement('div');
         this.timeDisplay.style.display = 'flex';
@@ -150,6 +175,9 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         controls.appendChild(this.resetBtn);
 
         if (this.container && this.timeDisplay) {
+            if (this.dateTimeDisplay) {
+                this.container.appendChild(this.dateTimeDisplay);
+            }
             this.container.appendChild(this.timeDisplay);
             if (this.totalTimeDisplay) {
                 this.container.appendChild(this.totalTimeDisplay);
@@ -367,6 +395,11 @@ export class DocumentPiPStrategy implements IPiPStrategy {
             this.totalTimeDisplay.style.fontSize = `${fontSize * 0.16}px`;
         }
 
+        // Update date/time display font size (14% of main font, min 10px)
+        if (this.dateTimeDisplay) {
+            this.dateTimeDisplay.style.fontSize = `${Math.max(10, fontSize * 0.14)}px`;
+        }
+
         // Update button sizes
         if (this.toggleBtn) {
             this.toggleBtn.style.width = `${buttonSize}px`;
@@ -402,6 +435,12 @@ export class DocumentPiPStrategy implements IPiPStrategy {
 
         this.isActive = false;
 
+        // Stop date/time update interval
+        if (this.dateTimeInterval) {
+            clearInterval(this.dateTimeInterval);
+            this.dateTimeInterval = null;
+        }
+
         // Disconnect ResizeObserver
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
@@ -422,6 +461,7 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.toggleBtn = null;
         this.resetBtn = null;
         this.totalTimeDisplay = null;
+        this.dateTimeDisplay = null;
 
         // Clear cached time display elements
         this.timePartSpans = [];
