@@ -100,7 +100,7 @@ export function drawTimerOnCanvas(
     ctx.fillStyle = 'rgba(161, 161, 170, 0.7)'; // zinc-400 at 70% opacity (slightly dimmer than total time)
     ctx.textAlign = 'center';
     ctx.font = `500 ${dateTimeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillText(dateTimeText, width / 2, y - effectiveFontSize * 0.45);
+    ctx.fillText(dateTimeText, width / 2, y - effectiveFontSize * 0.7);
 
     // 11. Draw total time display (iOS-style) below main countdown
     const totalTimeText = formatTotalTime(state.totalSeconds);
