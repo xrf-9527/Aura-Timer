@@ -1,22 +1,6 @@
 import { TimerStatus } from '../../types';
 import type { PiPState } from './strategies/IPiPStrategy';
-import { formatTotalTime } from '../../utils/formatTime';
-
-/**
- * Format current date and time for PiP display
- * Uses user's locale for natural weekday/time formatting
- */
-function formatDateTime(): { weekday: string; time: string } {
-    const now = new Date();
-    // Short weekday: "周四", "Thu", etc.
-    const weekday = now.toLocaleDateString(undefined, { weekday: 'short' });
-    // Time without seconds: "14:32", "2:32 PM", etc.
-    const time = now.toLocaleTimeString(undefined, {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-    return { weekday, time };
-}
+import { formatDateTime, formatTotalTime } from '../../utils/formatTime';
 
 export function drawTimerOnCanvas(
     canvas: HTMLCanvasElement,

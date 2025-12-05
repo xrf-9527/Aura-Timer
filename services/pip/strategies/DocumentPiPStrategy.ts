@@ -1,20 +1,6 @@
 import { IPiPStrategy, PiPState, PiPCallbacks } from './IPiPStrategy.ts';
 import { TimerStatus } from '../../../types';
-import { formatTotalTime } from '../../../utils/formatTime';
-
-/**
- * Format current date and time for PiP display
- * Uses user's locale for natural weekday/time formatting
- */
-function formatDateTime(): string {
-    const now = new Date();
-    const weekday = now.toLocaleDateString(undefined, { weekday: 'short' });
-    const time = now.toLocaleTimeString(undefined, {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-    return `${weekday} ${time}`;
-}
+import { formatDateTime, formatTotalTime } from '../../../utils/formatTime';
 
 export class DocumentPiPStrategy implements IPiPStrategy {
     public isActive: boolean = false;
@@ -133,8 +119,13 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         this.container!.className = 'flex flex-col items-center justify-center w-full h-full select-none';
 
         // Date/Time Display (current weekday and time)
+        const getDateTimeText = () => {
+            const { weekday, time } = formatDateTime();
+            return `${weekday} ${time}`;
+        };
+
         this.dateTimeDisplay = doc.createElement('div');
-        this.dateTimeDisplay.textContent = formatDateTime();
+        this.dateTimeDisplay.textContent = getDateTimeText();
         this.dateTimeDisplay.style.color = 'rgba(161, 161, 170, 0.7)'; // zinc-400 at 70%
         this.dateTimeDisplay.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         this.dateTimeDisplay.style.fontWeight = '500';
@@ -144,7 +135,7 @@ export class DocumentPiPStrategy implements IPiPStrategy {
         // Start interval to update date/time every second
         this.dateTimeInterval = setInterval(() => {
             if (this.dateTimeDisplay) {
-                this.dateTimeDisplay.textContent = formatDateTime();
+                this.dateTimeDisplay.textContent = getDateTimeText();
             }
         }, 1000);
 
