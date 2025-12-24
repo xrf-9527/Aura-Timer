@@ -30,7 +30,7 @@ export default {
 
                 const ai = new GoogleGenAI({ apiKey });
                 const response = await ai.models.generateContent({
-                    model: "gemini-2.5-flash",
+                    model: "gemini-3-flash-preview",
                     contents: `User wants to set a timer for: "${query}". Determine the appropriate duration in seconds.`,
                     config: {
                         systemInstruction: "You are a helpful timer assistant. You interpret natural language requests for time duration (e.g., 'boil pasta', '20 minutes', 'pomodoro') and return the duration in seconds. If the request is vague, estimate a standard time. If the request is invalid, return 0.",
