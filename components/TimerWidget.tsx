@@ -424,9 +424,7 @@ export const TimerWidget: React.FC = () => {
   let textColorClass = 'text-zinc-200 drop-shadow-sm';
   let boxGlowStyle = '0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1)';
 
-  if (isTimerComplete) {
-    boxGlowStyle = '0 0 60px rgba(239, 68, 68, 0.5), inset 0 0 0 1px rgba(239, 68, 68, 0.4)';
-  } else if (isOvertime) {
+  if (isOvertime) {
     textColorClass = 'text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]';
     boxGlowStyle = '0 0 40px rgba(251, 191, 36, 0.3), inset 0 0 0 1px rgba(252, 211, 77, 0.3)';
   } else if (isWarning) {
@@ -462,7 +460,7 @@ export const TimerWidget: React.FC = () => {
   return (
     <div
       className={`fixed select-none transition-shadow duration-300 ease-in-out ${isDragging ? 'cursor-grabbing' : 'cursor-default'
-        } ${isTimerComplete ? 'animate-pulse' : ''}`}
+        } ${isTimerComplete ? 'animate-pulse-glow-red' : ''}`}
       style={{
         left: 0,
         top: 0,

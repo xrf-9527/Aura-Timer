@@ -13,3 +13,16 @@ body {
   overflow: hidden;
   background: #1a1a1a;
 }
+
+@keyframes pulse-glow-red {
+  0%, 100% {
+    box-shadow: 0 0 60px rgba(239, 68, 68, 0.5), inset 0 0 0 1px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2), inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+  }
+}
+
+.animate-pulse-glow-red {
+  animation: pulse-glow-red 2s ease-in-out infinite;
+}
