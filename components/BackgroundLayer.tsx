@@ -28,18 +28,28 @@ export function BackgroundLayer({ interval, enabled = true }: BackgroundLayerPro
   });
 
   return (
-    <div
-      className="fixed inset-0 z-0 pointer-events-none"
-      role="presentation"
-      aria-hidden="true"
-      style={{
-        backgroundImage: `url('${backgroundUrl}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-        opacity,
-        transition: `opacity ${transitionDuration}s ease-in-out`,
-      }}
-    />
+    <div className="fixed inset-0 z-0 pointer-events-none" role="presentation" aria-hidden="true">
+      {/* 背景图层 */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url('${backgroundUrl}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+          opacity,
+          transition: `opacity ${transitionDuration}s ease-in-out`,
+        }}
+      />
+      {/* 暗色柔化层 — Apple 风格 ~25% 暗化 */}
+      <div className="absolute inset-0 bg-black/25" />
+      {/* 渐晕效果 — 边缘加深，引导视线到中心 */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)',
+        }}
+      />
+    </div>
   );
 }

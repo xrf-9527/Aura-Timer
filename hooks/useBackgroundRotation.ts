@@ -13,22 +13,22 @@ const BACKGROUND_IMAGE_IDS = [
 
   // 蓝天和海洋（舒缓视觉）
   'photo-1469474968028-56623f02e42e', // 湖泊
-  'photo-1501785888041-af3ef285b470', // 日落山景
+  'photo-1518173946687-a1e4e1f966f6', // 柔和黄昏湖面
   'photo-1447752875215-b2761acb3c5d', // 田野
 
   // 柔和的自然光线
   'photo-1470071459604-3b5ec3a7fe05', // 雾气森林
   'photo-1472214103451-9374bd1c798e', // 山峰
-  'photo-1475924156734-496f6cac6ec1', // 樱花树
+  'photo-1490750967868-88aa4f44baee', // 深绿竹林
 
   // 宁静的水景
   'photo-1439066615861-d1af74d74000', // 湖边
   'photo-1418065460487-3e41a6c84dc5', // 森林湖
-  'photo-1464822759023-fed622ff2c3b', // 雪山
+  'photo-1432405972618-c6b0cfba8b43', // 柔和雾气山谷
 ];
 
 const BACKGROUND_IMAGES = BACKGROUND_IMAGE_IDS.map(
-  id => `https://images.unsplash.com/${id}?w=${IMG_WIDTH}&q=80`
+  id => `https://images.unsplash.com/${id}?w=${IMG_WIDTH}&q=75&auto=format&fit=crop`
 );
 
 export interface BackgroundRotationOptions {
