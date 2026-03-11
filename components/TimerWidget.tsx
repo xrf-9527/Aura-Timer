@@ -121,9 +121,11 @@ export const TimerWidget: React.FC = () => {
   const expiryTimestampRef = useRef<number | null>(null);
   // Guard to prevent timer completion from firing multiple times within the detection window
   const completionFiredRef = useRef(false);
+  // Track completion glow timeout for cleanup on unmount
+  const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Widget dimensions (responsive: clamp to viewport on small screens)
-  const WIDGET_WIDTH = typeof window !== 'undefined' ? Math.min(340, window.innerWidth - 32) : 340;
+  // Widget dimensions for initial centering (CSS handles responsive width via min())
+  const WIDGET_WIDTH = 340;
   const WIDGET_HEIGHT = 200;
 
   // Initial center position
@@ -210,7 +212,9 @@ export const TimerWidget: React.FC = () => {
         if (remainingMs <= 0 && !completionFiredRef.current) {
           completionFiredRef.current = true;
           setIsTimerComplete(true);
-          setTimeout(() => setIsTimerComplete(false), 3000);
+          // Clear any previous timeout before setting a new one
+          if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current);
+          completionTimeoutRef.current = setTimeout(() => setIsTimerComplete(false), 3000);
 
           // Web Notification (if permission already granted)
           if ('Notification' in window && Notification.permission === 'granted') {
@@ -224,7 +228,13 @@ export const TimerWidget: React.FC = () => {
       expiryTimestampRef.current = null;
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current);
+        completionTimeoutRef.current = null;
+      }
+    };
   }, [status, timeLeft]); // timeLeft dependency ensures restart sets new target
 
   // React 19.2 best practice: Merge Wake Lock logic into single useEffect
@@ -311,7 +321,7 @@ export const TimerWidget: React.FC = () => {
     if (status !== TimerStatus.RUNNING &&
         'Notification' in window &&
         Notification.permission === 'default') {
-      Notification.requestPermission();
+      void Notification.requestPermission();
     }
     setStatus((prev) => (prev === TimerStatus.RUNNING ? TimerStatus.PAUSED : TimerStatus.RUNNING));
   };
