@@ -2,27 +2,34 @@ import { useState, useEffect } from 'react';
 
 // 精选护眼高清背景图片集合（使用 Unsplash 的自然风景主题）
 // 这些图片都是柔和的自然色调，对眼睛友好
-const BACKGROUND_IMAGES = [
+// 根据屏幕宽度选择合适的图片尺寸，移动端使用较小图片节省带宽
+const IMG_WIDTH = typeof window !== 'undefined' && window.innerWidth <= 768 ? 960 : 1920;
+
+const BACKGROUND_IMAGE_IDS = [
   // 绿色森林和自然景观（护眼效果最佳）
-  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80', // 森林
-  'https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80', // 绿色山脉
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80', // 山景
+  'photo-1441974231531-c6227db76b6e', // 森林
+  'photo-1511497584788-876760111969', // 绿色山脉
+  'photo-1506905925346-21bda4d32df4', // 山景
 
   // 蓝天和海洋（舒缓视觉）
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80', // 湖泊
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80', // 日落山景
-  'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80', // 田野
+  'photo-1469474968028-56623f02e42e', // 湖泊
+  'photo-1501785888041-af3ef285b470', // 日落山景
+  'photo-1447752875215-b2761acb3c5d', // 田野
 
   // 柔和的自然光线
-  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&q=80', // 雾气森林
-  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80', // 山峰
-  'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80', // 樱花树
+  'photo-1470071459604-3b5ec3a7fe05', // 雾气森林
+  'photo-1472214103451-9374bd1c798e', // 山峰
+  'photo-1475924156734-496f6cac6ec1', // 樱花树
 
   // 宁静的水景
-  'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1920&q=80', // 湖边
-  'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1920&q=80', // 森林湖
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80', // 雪山
+  'photo-1439066615861-d1af74d74000', // 湖边
+  'photo-1418065460487-3e41a6c84dc5', // 森林湖
+  'photo-1464822759023-fed622ff2c3b', // 雪山
 ];
+
+const BACKGROUND_IMAGES = BACKGROUND_IMAGE_IDS.map(
+  id => `https://images.unsplash.com/${id}?w=${IMG_WIDTH}&q=80`
+);
 
 export interface BackgroundRotationOptions {
   /** 图片切换间隔时间（毫秒），默认 5 分钟 */

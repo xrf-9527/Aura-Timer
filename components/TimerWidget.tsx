@@ -18,7 +18,7 @@ const ResetIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"></path><path d="M3 3v9h9"></path></svg>
 );
 const SparklesIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"></path></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
 );
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -110,6 +110,7 @@ export const TimerWidget: React.FC = () => {
   const [now, setNow] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
   const [isFirefox, setIsFirefox] = useState(false);
+  const [isTimerComplete, setIsTimerComplete] = useState(false);
 
   // Use a ref to hold the wake lock sentinel
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
@@ -118,9 +119,11 @@ export const TimerWidget: React.FC = () => {
   // Uses Date.now() instead of tick counting - industry standard approach (react-timer-hook, pomofocus)
   // See: https://stackoverflow.com/questions/29971898/how-to-create-an-accurate-timer-in-javascript
   const expiryTimestampRef = useRef<number | null>(null);
+  // Guard to prevent timer completion from firing multiple times within the detection window
+  const completionFiredRef = useRef(false);
 
-  // Widget dimensions (must match actual rendered size)
-  const WIDGET_WIDTH = 340;
+  // Widget dimensions (responsive: clamp to viewport on small screens)
+  const WIDGET_WIDTH = typeof window !== 'undefined' ? Math.min(340, window.innerWidth - 32) : 340;
   const WIDGET_HEIGHT = 200;
 
   // Initial center position
@@ -203,9 +206,16 @@ export const TimerWidget: React.FC = () => {
           return prev;
         });
 
-        // Timer completion: only trigger when crossing zero from positive
-        if (remainingMs <= 0 && remainingMs > -1000) {
-          // Timer expired - can add sound/notification here
+        // Timer completion: only trigger once when crossing zero
+        if (remainingMs <= 0 && !completionFiredRef.current) {
+          completionFiredRef.current = true;
+          setIsTimerComplete(true);
+          setTimeout(() => setIsTimerComplete(false), 3000);
+
+          // Web Notification (if permission already granted)
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Aura Timer', { body: 'Time is up!' });
+          }
         }
       }, 100); // 100ms = sub-second precision, smooth visual updates
     } else {
@@ -293,9 +303,16 @@ export const TimerWidget: React.FC = () => {
     setTimeLeft(totalSeconds);
     // Clear timestamp to ensure fresh start on next play
     expiryTimestampRef.current = null;
+    completionFiredRef.current = false;
   };
 
   const toggleTimer = () => {
+    // Request notification permission on first play (must be from user gesture)
+    if (status !== TimerStatus.RUNNING &&
+        'Notification' in window &&
+        Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     setStatus((prev) => (prev === TimerStatus.RUNNING ? TimerStatus.PAUSED : TimerStatus.RUNNING));
   };
 
@@ -397,7 +414,9 @@ export const TimerWidget: React.FC = () => {
   let textColorClass = 'text-zinc-200 drop-shadow-sm';
   let boxGlowStyle = '0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1)';
 
-  if (isOvertime) {
+  if (isTimerComplete) {
+    boxGlowStyle = '0 0 60px rgba(239, 68, 68, 0.5), inset 0 0 0 1px rgba(239, 68, 68, 0.4)';
+  } else if (isOvertime) {
     textColorClass = 'text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]';
     boxGlowStyle = '0 0 40px rgba(251, 191, 36, 0.3), inset 0 0 0 1px rgba(252, 211, 77, 0.3)';
   } else if (isWarning) {
@@ -433,7 +452,7 @@ export const TimerWidget: React.FC = () => {
   return (
     <div
       className={`fixed select-none transition-shadow duration-300 ease-in-out ${isDragging ? 'cursor-grabbing' : 'cursor-default'
-        }`}
+        } ${isTimerComplete ? 'animate-pulse' : ''}`}
       style={{
         left: 0,
         top: 0,
@@ -445,7 +464,7 @@ export const TimerWidget: React.FC = () => {
           : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease-in-out',
         // Hint browser to optimize transform animations
         willChange: isDragging ? 'transform' : 'auto',
-        width: '340px',
+        width: 'min(340px, calc(100vw - 32px))',
         // Glassmorphism Styles
         backdropFilter: 'blur(30px)',
         WebkitBackdropFilter: 'blur(30px)',
@@ -512,7 +531,7 @@ export const TimerWidget: React.FC = () => {
             </div>
             {/* Total Time Display (iOS-style) - Always visible below countdown */}
             {!isFirefox && (
-              <div className="text-sm text-zinc-400/80 font-sans mt-1 tracking-wide">
+              <div className="text-sm text-zinc-300 font-sans mt-1 tracking-wide">
                 {formatTotalTime(totalSeconds)}
               </div>
             )}
@@ -532,6 +551,7 @@ export const TimerWidget: React.FC = () => {
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && submitEdit()}
+                  aria-label="Timer duration in minutes"
                   className="w-32 bg-transparent text-6xl text-center font-mono text-zinc-200 border-b-2 border-zinc-500 focus:border-zinc-200 focus:outline-none placeholder-zinc-600"
                 />
                 <span className="text-xl text-zinc-400 font-sans">min</span>
@@ -541,13 +561,14 @@ export const TimerWidget: React.FC = () => {
                   onClick={() => setShowAiInput(true)}
                   className="ml-4 p-2 rounded-full bg-white/5 hover:bg-indigo-500/30 text-zinc-400 hover:text-indigo-200 transition-all hover:scale-105"
                   title="Ask AI to set time"
+                  aria-label="Set time with AI"
                 >
                   <SparklesIcon />
                 </button>
               </div>
             ) : (
               // AI Input
-              <form onSubmit={handleAiSubmit} className="w-full flex items-center gap-2">
+              <form onSubmit={handleAiSubmit} className="w-full flex items-center gap-2" aria-busy={isAiLoading}>
                 <div className="relative w-full">
                   <div className="absolute left-2.5 top-2.5 text-zinc-400">
                     <SparklesIcon />
@@ -558,6 +579,7 @@ export const TimerWidget: React.FC = () => {
                     placeholder="e.g. Boil an egg..."
                     value={smartPrompt}
                     onChange={(e) => setSmartPrompt(e.target.value)}
+                    aria-label="Describe a task for AI to set timer duration"
                     className="w-full bg-black/20 text-zinc-200 text-sm pl-9 pr-8 py-2 rounded-lg border border-zinc-700 focus:border-indigo-400/50 focus:outline-none placeholder-zinc-500"
                     disabled={isAiLoading}
                   />
@@ -569,6 +591,7 @@ export const TimerWidget: React.FC = () => {
                   type="button"
                   onClick={() => setShowAiInput(false)}
                   className="text-zinc-500 hover:text-zinc-200"
+                  aria-label="Close AI input"
                 >
                   <CloseIcon />
                 </button>
@@ -578,7 +601,7 @@ export const TimerWidget: React.FC = () => {
             {!showAiInput && (
               <button
                 onClick={submitEdit}
-                className="mt-2 text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-200 font-semibold"
+                className="mt-2 text-xs uppercase tracking-widest text-zinc-400 hover:text-zinc-200 font-semibold"
               >
                 Set Timer
               </button>
@@ -596,6 +619,7 @@ export const TimerWidget: React.FC = () => {
           <button
             onClick={toggleTimer}
             className="p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 text-zinc-200 shadow-lg transition-transform active:scale-95"
+            aria-label={status === TimerStatus.RUNNING ? 'Pause timer' : 'Start timer'}
           >
             {status === TimerStatus.RUNNING ? <PauseIcon /> : <PlayIcon />}
           </button>
@@ -603,6 +627,7 @@ export const TimerWidget: React.FC = () => {
           <button
             onClick={resetTimer}
             className="p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 text-zinc-400 hover:text-zinc-200 shadow-lg transition-transform active:scale-95"
+            aria-label="Reset timer"
           >
             <ResetIcon />
           </button>
@@ -612,6 +637,7 @@ export const TimerWidget: React.FC = () => {
               onClick={togglePiP}
               className={`p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 ${isPiPActive ? 'text-indigo-400' : 'text-zinc-400 hover:text-zinc-200'} shadow-lg transition-transform active:scale-95`}
               title="Toggle Picture-in-Picture"
+              aria-label={isPiPActive ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
             >
               <PiPIcon />
             </button>

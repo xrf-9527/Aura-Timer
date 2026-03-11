@@ -19,7 +19,6 @@ export const InstructionOverlay: React.FC = () => {
                         damping: 30
                     }}
                     onClick={() => setIsMinimized(false)}
-                    style={{ willChange: "transform, opacity" }}
                     className="absolute top-8 left-8 z-10 group flex items-center justify-center w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white/70 hover:bg-black/40 hover:text-white shadow-lg"
                     title="Show Instructions"
                 >
@@ -46,15 +45,14 @@ export const InstructionOverlay: React.FC = () => {
                 <motion.div
                     key="expanded-panel"
                     layoutId="overlay-container"
-                    initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
                     transition={{
                         type: "spring",
                         stiffness: 400,
                         damping: 30
                     }}
-                    style={{ willChange: "transform, opacity, filter" }}
                     className="absolute top-8 left-8 z-10 w-80 p-5 rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] text-white overflow-hidden"
                 >
                     <motion.div
@@ -72,6 +70,7 @@ export const InstructionOverlay: React.FC = () => {
                             onClick={() => setIsMinimized(true)}
                             className="text-white/50 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
                             title="Minimize"
+                            aria-label="Close instructions"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -135,7 +134,7 @@ export const InstructionOverlay: React.FC = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, transition: { duration: 0.1 } }}
                         transition={{ delay: 0.3 }}
-                        className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/40 italic font-sans"
+                        className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/60 italic font-sans"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>

@@ -13,7 +13,7 @@ Aura Timer is a macOS-inspired floating timer widget built with React 19.2, Type
 - React 19.2.0 with React Compiler 1.0.0
 - TypeScript 5.3.0
 - Vite 7.2.4
-- Tailwind CSS (via CDN)
+- Tailwind CSS v4 (via @tailwindcss/vite plugin)
 - Google Gemini AI (@google/genai)
 - Deployed on Cloudflare Workers (wrangler)
 
@@ -207,11 +207,7 @@ plugins: [
 - Consolidated 3 `useEffect` blocks into 1 (TimerWidget Wake Lock logic)
 - Simplified dependency arrays to contain only primitive values
 
-**ESLint Integration** (Recommended for Future):
-While not currently configured, consider adding `eslint-plugin-react-hooks@latest` to detect Rules of React violations:
-```bash
-npm install --save-dev eslint eslint-plugin-react-hooks
-```
+**ESLint Integration**: `eslint-plugin-react-hooks@7.0.1` is installed and configured to detect Rules of React violations.
 
 See [React Compiler v1.0 Documentation](https://react.dev/blog/2025/10/07/react-compiler-1) for details.
 
@@ -227,7 +223,7 @@ See [React Compiler v1.0 Documentation](https://react.dev/blog/2025/10/07/react-
 ### Browser Compatibility & Performance
 
 - Requires modern browsers (import maps, `backdrop-filter` CSS)
-- Tailwind loaded via CDN (consider bundling for production)
+- Tailwind CSS v4 bundled via Vite plugin (tree-shaken, ~5KB gzipped)
 - Background images from Unsplash CDN (pre-sized 1920px)
 - `setInterval` cleanup prevents memory leaks
 

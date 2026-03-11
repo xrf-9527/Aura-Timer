@@ -1,6 +1,6 @@
 name = "aura-timer"
 main = "worker.ts"
-compatibility_date = "2025-11-29"
+compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat_v2"]
 
 [assets]
